@@ -14,11 +14,6 @@ jobs:
     - name: Check out the code
       uses: actions/checkout@v2
 
-    - name: Run a multi-line script
-      run: |
-        echo Add other actions to build,
-        echo test, and deploy your project.
-
     - name: Setup Python
       uses: actions/setup-python@v1
       with:
@@ -27,6 +22,11 @@ jobs:
     - name: Install Pandoc
       run: |
         sudo apt install -y pandoc
+
+    - name: Find files
+      run: |
+        files=`find . -name \*\.[123456789]\.md`
+        echo files: $files
 
     - name: Run Pandoc
       run: |
