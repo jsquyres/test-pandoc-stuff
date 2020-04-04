@@ -32,6 +32,8 @@ jobs:
             ./md2nroff.py --source $file --dest $outfile
             git add $outfile
         done
+        git config --global user.name 'Open MPI Bot'
+        git config --global user.email 'ompi-bot@open-mpi.org'
         git commit -s -m 'Updated nroff-generated man pages'
         git show
 
