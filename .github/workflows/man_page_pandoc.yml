@@ -54,11 +54,6 @@ jobs:
         branch: ${{ env.PULL_REQUEST_FROM_BRANCH }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
-
-          - name: Derive from branch name
-        run: |
-            # do custom parsing of your code / date to derive a branch from
-
     - name: pull-request-action
       uses: vsoch/pull-request-action@1.0.5
       if: ${{ env.PULL_REQUEST_FROM_BRANCH != "" }}
