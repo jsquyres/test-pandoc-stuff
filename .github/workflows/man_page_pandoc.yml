@@ -29,12 +29,17 @@ jobs:
     #  with:
     #    args: "--from=markdown --to=man --output=fabric.7 fabric.7.md"
 
-    - name: Setup Pandoc
-      uses: r-lib/actions/setup-pandoc@v1
-      with:
-        pandoc-version: '2.9'
+    #- name: Setup Pandoc
+    #  uses: r-lib/actions/setup-pandoc@v1
+    #  with:
+    #    pandoc-version: '2.9'
 
-    - name: Run pandoc
+    - name: Setup Pandoc
+      run: |
+        apt update
+        apt install -y pandoc
+
+    - name: Run Pandoc
       run: |
         pandoc --version
         pandoc --from=markdown --to=man --output=fabric.7 fabric.7.md
