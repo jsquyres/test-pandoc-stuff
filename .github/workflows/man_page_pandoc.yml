@@ -36,6 +36,12 @@ jobs:
         git config --global user.email 'ompi-bot@open-mpi.org'
         git commit -s -m 'Updated nroff-generated man pages'
         git log -n 3
+        # Try a 2nd commit to see the error
+        git commit -s -m 'AGAIN Updated nroff-generated man pages'
+        st=$?
+        uptime
+        echo still here
+        echo st was: $st
 
     - name: Upload artifacts to Github
       uses: actions/upload-artifact@master
