@@ -23,14 +23,17 @@ jobs:
       run: |
         sudo apt install -y pandoc
 
-    - name: Find files
+    - name: Find all Markdown man pages and run Pandoc on them
       run: |
         files=`find . -name \*\.[123456789]\.md`
         echo files: $files
         for file in $files; do
             outfile=`echo $file | sed -e 's/.md//'`
             ./md2nroff.py --source $file --dest $outfile
+            git add $outfile
         done
+        git commit -s -m 'Updated nroff-generated man pages'
+        git show
 
     - name: Upload artifacts to Github
       uses: actions/upload-artifact@master
