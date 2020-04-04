@@ -42,21 +42,23 @@ jobs:
         git commit -s -m 'Updated nroff-generated man pages' || touch not-needed
         if test -f not-needed; then
             echo the git commit was not needed
+            echo "::set-env name=NEED_GIT_COMMIT=0"
         else
             echo we needed the git commit
+            echo "::set-env name=NEED_GIT_COMMIT=1"
             echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}
         fi
 
-    - name: Push changes
+    - name: Push changes to md2nroff/ branch
       uses: ad-m/github-push-action@master
-      if: ${{ env.PULL_REQUEST_FROM_BRANCH != "" }}
+      if: ${{ env.NEED_GIT_COMMIT == 1 }}
       with:
         branch: ${{ env.PULL_REQUEST_FROM_BRANCH }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: pull-request-action
+    - name: Create Pull Request
       uses: vsoch/pull-request-action@1.0.5
-      if: ${{ env.PULL_REQUEST_FROM_BRANCH != "" }}
+      if: ${{ env.NEED_GIT_COMMIT == 1 }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH_PREFIX: "md2nroff/"
