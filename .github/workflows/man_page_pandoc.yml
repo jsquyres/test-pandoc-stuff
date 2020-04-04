@@ -35,7 +35,7 @@ jobs:
         git config --global user.name 'Open MPI Bot'
         git config --global user.email 'ompi-bot@open-mpi.org'
         git commit -s -m 'Updated nroff-generated man pages'
-        git show
+        git log -n 3
 
     - name: Upload artifacts to Github
       uses: actions/upload-artifact@master
