@@ -24,7 +24,7 @@ jobs:
       with:
         python-version: 3.8
 
-    - name: Setup Pandoc
+    - name: Install Pandoc
       run: |
         sudo apt install -y pandoc
 
