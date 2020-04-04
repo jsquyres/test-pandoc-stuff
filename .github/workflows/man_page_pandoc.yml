@@ -46,7 +46,7 @@ jobs:
         else
             echo we needed the git commit
             echo "::set-env name=NEED_GIT_COMMIT=1"
-            echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}""
+            echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}"
         fi
 
     - name: Push changes to 'md2nroff/' branch
@@ -63,7 +63,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH_PREFIX: "md2nroff/"
         PULL_REQUEST_BRANCH: "master"
-        PULL_REQUEST_BODY: "The nroff elves created these man pages, just for you!"
+        PULL_REQUEST_BODY: "The Nroff Elves created these man pages, just for you!"
         PULL_REQUEST_TITLE: "Update nroff-generated man pages"
 
     #- name: Upload artifacts to Github
