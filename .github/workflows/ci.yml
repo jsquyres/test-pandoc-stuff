@@ -1,17 +1,15 @@
 name: Continuous Integration
 
-on:
-  push: {branches: master}
-  pull_request: {branches: master}
+on: pull_request
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v2
+    ci:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Check out the code
+            uses: actions/checkout@v2
 
-      - name: Pretend like we're doing some CI
-        run: |
-          echo Hello world
-          sleep 15
+          - name: Pretend like we're doing some CI
+            run: |
+              echo Hello world
+              sleep 15
