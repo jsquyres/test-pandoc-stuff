@@ -19,21 +19,26 @@ jobs:
         echo Add other actions to build,
         echo test, and deploy your project.
 
-    - name: Make sure output directory exists
-      run: mkdir output
-
     - name: Setup Python
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
 
-    - name: Setup and run Pandoc
-      uses: docker://pandoc/core:2.9
-      with:
-        args: "--from=markdown --to=man --output=output/fabric.7 fabric.7.md"
+    #- name: Setup and run Pandoc
+    #  uses: docker://pandoc/core:2.9
+    #  with:
+    #    args: "--from=markdown --to=man --output=fabric.7 fabric.7.md"
 
-    - name: Upload artifacts to Github
-      uses: actions/upload-artifact@master
+    - name: Setup Pandoc
+      uses: r-lib/actions/setup-pandoc@v1
       with:
-        name: output
-        path: output
+        pandoc-version: '2.9'
+
+    - name: Run pandoc
+      run: |
+        pandoc --version
+    #- name: Upload artifacts to Github
+    #  uses: actions/upload-artifact@master
+    #  with:
+    #    name: fabric.7
+    #    path: fabric.7
