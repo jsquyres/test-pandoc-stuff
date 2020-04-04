@@ -1,10 +1,3 @@
----
-layout: page
-title: fabric(7)
-tagline: Libfabric Programmer's Manual
----
-{% include JB/setup %}
-
 # NAME
 
 fabric \- Fabric Interface Library
