@@ -34,8 +34,6 @@ jobs:
         done
 
     - name: Try to git commit
-      env:
-        CREDENTIALS: ${{ secrets.BOT_CREDENTIALS }}
       run: |
         git config --global user.name 'Open MPI Bot'
         git config --global user.email 'ompi-bot@open-mpi.org'
@@ -49,6 +47,7 @@ jobs:
             echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}"
         fi
 
+    # https://github.com/ad-m/github-push-action
     - name: Push changes to 'md2nroff/' branch
       uses: ad-m/github-push-action@master
       if: ${{ env.NEED_GIT_COMMIT == 1 }}
@@ -56,6 +55,7 @@ jobs:
         branch: ${{ env.PULL_REQUEST_FROM_BRANCH }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
+    # https://github.com/vsoch/pull-request-action
     - name: Create Pull Request
       uses: vsoch/pull-request-action@1.0.5
       if: ${{ env.NEED_GIT_COMMIT == 1 }}
@@ -66,8 +66,14 @@ jobs:
         PULL_REQUEST_BODY: "The Nroff Elves created these man pages, just for you!"
         PULL_REQUEST_TITLE: "Update nroff-generated man pages"
 
-    #- name: Upload artifacts to Github
-    #  uses: actions/upload-artifact@master
-    #  with:
-    #    name: fabric.7
-    #    path: fabric.7
+    # https://github.com/actions/github-script
+    - name: Apply 'automerge' label to just-created Pull Request
+      uses: actions/github-script@0.9.0
+      if: ${{ env.NEED_GIT_COMMIT == 1 }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+            github.pull_requests.addLabels({
+              pull_request_number: ${{ env.PULL_REQUEST_NUMBER }},
+              labels: ['automerge']
+            })
