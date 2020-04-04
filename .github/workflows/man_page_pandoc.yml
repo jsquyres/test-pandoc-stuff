@@ -25,10 +25,10 @@ jobs:
     - uses: docker://pandoc/latex:2.9
       with:
         args: |>
-            --from=markdown
-            --to=man
-            --output=output/fabric.7
-            fabric.7.md
+          --from=markdown
+          --to=man
+          --output=output/fabric.7
+          fabric.7.md
     - uses: actions/upload-artifact@master
       with:
         name: output
