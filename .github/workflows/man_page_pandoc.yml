@@ -34,31 +34,26 @@ jobs:
         done
 
     - name: Try to git commit
+      env:
+        CREDENTIALS: ${{ secrets.BOT_CREDENTIALS }}
       run: |
         git config --global user.name 'Open MPI Bot'
         git config --global user.email 'ompi-bot@open-mpi.org'
+        git checkout -b md2nroff/from-${{ github.sha }}
         git commit -s -m 'Updated nroff-generated man pages' || touch not-needed
         if test -f not-needed; then
             echo the git commit was not needed
+            git checkout master
+            git branch -D md2nroff/from-${{ github.sha }}
         else
             echo we needed the git commit
+            git remote -v
         fi
 
-    - name: Try to git commit 2nd time
-      run: |
-        git config --global user.name 'Open MPI Bot'
-        git config --global user.email 'ompi-bot@open-mpi.org'
-        git commit -s -m 'Updated nroff-generated man pages' || touch not-needed
-        if test -f not-needed; then
-            echo the git commit was not needed
-        else
-            echo we needed the git commit
-        fi
-
-    - name: Are we still here?
-      run: |
-        echo we are still here
-        uptime
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload artifacts to Github
       uses: actions/upload-artifact@master
