@@ -67,20 +67,6 @@ jobs:
         PULL_REQUEST_TITLE: "Update nroff-generated man pages"
 
     # https://github.com/actions/github-script
-    - name: Add comment to original PR about new nroff PR
-      uses: actions/github-script@0.9.0
-      if: ${{ env.NEED_GIT_COMMIT == 1 }}
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-            github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'The Nroff Elves converted the Markdown changes in this PR to nroff man pages in PR #${{ env.PULL_REQUEST_NUMBER }}'
-            })
-
-    # https://github.com/actions/github-script
     - name: Apply 'automerge' label to just-created Pull Request
       uses: actions/github-script@0.9.0
       if: ${{ env.NEED_GIT_COMMIT == 1 }}
