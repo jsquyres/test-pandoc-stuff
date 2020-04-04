@@ -36,8 +36,8 @@ jobs:
 
     - name: Setup Pandoc
       run: |
-        apt update
-        apt install -y pandoc
+        sudo apt update
+        sudo apt install -y pandoc
 
     - name: Run Pandoc
       run: |
