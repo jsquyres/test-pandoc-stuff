@@ -64,8 +64,6 @@ source_content = f"""% {shortfile}({man_section}) Libfoobar | OMPI_VERSION
 
 {source_content}"""
 
-pprint(source_content)
-
 #--------------------------------------------------------------------------
 
 print(f"*** Processing: {args.source} --> {args.dest}")
