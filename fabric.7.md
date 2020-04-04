@@ -26,7 +26,7 @@ with open("filename") as f:
     lines = f.readlines()
 ```
 
-Hello world.  Again.  Yow.  Blarg.  Yowza.  Hello.  Goodbye.  Today.
+Hello world.  Again.  Yow.  Blarg.  Yowza.  Hello.  Goodbye.  Today. All.
 
 There are two components to the libfabric software:
 
