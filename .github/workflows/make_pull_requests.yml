@@ -2,7 +2,7 @@ name: Make pull requests on md2nroff branches
 
 on:
   push:
-    branches:
+    branches-exclude:
       - master
 
 jobs:
