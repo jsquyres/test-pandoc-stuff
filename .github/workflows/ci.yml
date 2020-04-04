@@ -1,0 +1,15 @@
+on:
+  push: {branches: master}
+  pull_request: {branches: master}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Pretend like we're doing some CI
+        run: |
+          echo Hello world
+          sleep 15
