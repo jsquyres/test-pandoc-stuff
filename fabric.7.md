@@ -19,16 +19,7 @@ referred to as RDMA, allows an application to directly access network
 resources without operating system interventions.  Data transfers can
 occur directly to and from application memory.
 
-Some C code:
-
-```c
-void foo(void)
-{
-    printf("Hello world\n");
-}
-```
-
-And some Python code:
+Some Python code:
 
 ```python
 with open("filename") as f:
