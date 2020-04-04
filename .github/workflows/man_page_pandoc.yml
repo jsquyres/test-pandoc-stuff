@@ -32,13 +32,6 @@ jobs:
       with:
         args: "--from=markdown --to=man --output=output/fabric.7 fabric.7.md"
 
-    - name: Run in Pandoc container
-      uses: docker://pandoc/core:2.9
-      run: |
-        pandoc --version
-        pwd
-        ls -l
-
     - name: Upload artifacts to Github
       uses: actions/upload-artifact@master
       with:
