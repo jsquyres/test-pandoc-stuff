@@ -37,8 +37,10 @@ jobs:
     - name: Run pandoc
       run: |
         pandoc --version
-    #- name: Upload artifacts to Github
-    #  uses: actions/upload-artifact@master
-    #  with:
-    #    name: fabric.7
-    #    path: fabric.7
+        pandoc --from=markdown --to=man --output=fabric.7 fabrics.7.md
+
+    - name: Upload artifacts to Github
+      uses: actions/upload-artifact@master
+      with:
+        name: fabric.7
+        path: fabric.7
