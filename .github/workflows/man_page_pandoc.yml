@@ -29,7 +29,7 @@ jobs:
         echo files: $files
         for file in $files; do
             outfile=`echo $file | sed -e 's/.md//'`
-            ./md2nroff.pt --source $file --dest $outfile
+            ./md2nroff.py --source $file --dest $outfile
         done
 
     - name: Run Pandoc
