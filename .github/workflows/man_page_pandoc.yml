@@ -24,7 +24,7 @@ jobs:
 
     - uses: docker://pandoc/latex:2.9
       with:
-        args: |>
+        args: |
           --from=markdown
           --to=man
           --output=output/fabric.7
