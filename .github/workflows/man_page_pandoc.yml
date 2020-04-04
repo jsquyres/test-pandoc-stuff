@@ -42,10 +42,10 @@ jobs:
         git commit -s -m 'Updated nroff-generated man pages' || touch not-needed
         if test -f not-needed; then
             echo the git commit was not needed
-            ::set-env name=NEED_GIT_COMMIT::0
+            echo "::set-env name=NEED_GIT_COMMIT::0"
         else
             echo we needed the git commit
-            ::set-env name=NEED_GIT_COMMIT::1
+            echo "::set-env name=NEED_GIT_COMMIT::1"
         fi
 
     - name: Push changes
