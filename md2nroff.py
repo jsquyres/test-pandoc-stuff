@@ -52,12 +52,19 @@ shortfile = re.sub(f'\.{man_section}.md$', '', shortfile)
 
 #--------------------------------------------------------------------------
 
+# Pandoc does not handle markdown links in output nroff properly, so just remove
+# all links.  Some versions of Pandoc ignore the links, but others handle it
+# badly.  So just remove all links.
+source_content = re.sub(r'\[(.+)\]\((.+)\)', r'\1', source_content)
+
 # Add the pandoc header
 source_content = f"""% {shortfile}({man_section}) Libfoobar | OMPI_VERSION
 % The Foo Organization
 % OMPI_DATE
 
 {source_content}"""
+
+pprint(source_content)
 
 #--------------------------------------------------------------------------
 
