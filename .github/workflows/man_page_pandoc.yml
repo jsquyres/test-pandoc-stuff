@@ -50,7 +50,7 @@ jobs:
 
     - name: Push changes
       uses: ad-m/github-push-action@master
-      if: {{ env.NEED_GIT_COMMIT == 1 }}
+      if: ${{ env.NEED_GIT_COMMIT == 1 }}
       with:
         branch: md2nroff/from-${{ github.sha }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
