@@ -22,10 +22,25 @@ jobs:
     - name: Make sure output directory exists
       run: mkdir output
 
-    - uses: docker://pandoc/core:2.9
+    - name: Setup Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Setup and run Pandoc
+      uses: docker://pandoc/core:2.9
       with:
         args: "--from=markdown --to=man --output=output/fabric.7 fabric.7.md"
-    - uses: actions/upload-artifact@master
+
+    - name: Run in Pandoc container
+      uses: docker://pandoc/core:2.9
+      run: |
+        pandoc --version
+        pwd
+        ls -l
+
+    - name: Upload artifacts to Github
+      uses: actions/upload-artifact@master
       with:
         name: output
         path: output
