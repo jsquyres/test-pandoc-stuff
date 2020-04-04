@@ -1,6 +1,6 @@
 name: Continuous Integration
 
-on: check_run
+on: pull_request
 
 jobs:
     ci:
