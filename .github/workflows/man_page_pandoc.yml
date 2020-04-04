@@ -32,11 +32,6 @@ jobs:
             ./md2nroff.py --source $file --dest $outfile
         done
 
-    - name: Run Pandoc
-      run: |
-        pandoc --version
-        pandoc --from=markdown --to=man --output=fabric.7 fabric.7.md
-
     - name: Upload artifacts to Github
       uses: actions/upload-artifact@master
       with:

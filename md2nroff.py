@@ -46,10 +46,9 @@ if not result:
     print("Error: Cannot figure out man page section from source filename")
     exit(1)
 man_section = int(result.group(1))
-print(f"Got man section: {man_section}")
+
 shortfile = os.path.basename(args.source)
 shortfile = re.sub(f'\.{man_section}.md$', '', shortfile)
-print(f"Got shortname {shortfile}")
 
 #--------------------------------------------------------------------------
 
@@ -60,12 +59,9 @@ source_content = f"""% {shortfile}({man_section}) Libfoobar | OMPI_VERSION
 
 {source_content}"""
 
-pprint(source_content)
-
 #--------------------------------------------------------------------------
 
-print(f"Processing: {args.source} --> {args.dest}")
-
+print(f"*** Processing: {args.source} --> {args.dest}")
 
 cmd = ['pandoc', '-s', '--from=markdown', '--to=man']
 out = subprocess.run(cmd, input=source_content.encode('utf-8'),
