@@ -23,6 +23,7 @@ jobs:
   automerge:
     runs-on: ubuntu-latest
     steps:
+      # https://github.com/marketplace/actions/merge-pull-requests
       - name: Automerge completed pull requests
         uses: "pascalgn/automerge-action@135f0bdb927d9807b5446f7ca9ecc2c51de03c4a"
         env:
