@@ -46,10 +46,10 @@ jobs:
         else
             echo we needed the git commit
             echo "::set-env name=NEED_GIT_COMMIT=1"
-            echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}
+            echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}""
         fi
 
-    - name: Push changes to md2nroff/ branch
+    - name: Push changes to 'md2nroff/' branch
       uses: ad-m/github-push-action@master
       if: ${{ env.NEED_GIT_COMMIT == 1 }}
       with:
