@@ -42,18 +42,32 @@ jobs:
         git commit -s -m 'Updated nroff-generated man pages' || touch not-needed
         if test -f not-needed; then
             echo the git commit was not needed
-            echo "::set-env name=NEED_GIT_COMMIT::0"
         else
             echo we needed the git commit
-            echo "::set-env name=NEED_GIT_COMMIT::1"
+            echo "::set-env name=PULL_REQUEST_FROM_BRANCH::md2nroff/from-${{ github.sha }}
         fi
 
     - name: Push changes
       uses: ad-m/github-push-action@master
-      if: ${{ env.NEED_GIT_COMMIT == 1 }}
+      if: ${{ env.PULL_REQUEST_FROM_BRANCH != "" }}
       with:
-        branch: md2nroff/from-${{ github.sha }}
+        branch: ${{ env.PULL_REQUEST_FROM_BRANCH }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
+
+
+          - name: Derive from branch name
+        run: |
+            # do custom parsing of your code / date to derive a branch from
+
+    - name: pull-request-action
+      uses: vsoch/pull-request-action@1.0.5
+      if: ${{ env.PULL_REQUEST_FROM_BRANCH != "" }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH_PREFIX: "md2nroff/"
+        PULL_REQUEST_BRANCH: "master"
+        PULL_REQUEST_BODY: "The nroff elves created these man pages, just for you!"
+        PULL_REQUEST_TITLE: "Update nroff-generated man pages"
 
     #- name: Upload artifacts to Github
     #  uses: actions/upload-artifact@master
