@@ -13,5 +13,5 @@ jobs:
             run: |
               echo Hello world
               date
-              sleep 60
+              sleep 5
               date
