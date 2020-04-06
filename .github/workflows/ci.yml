@@ -12,4 +12,6 @@ jobs:
           - name: Pretend like we're doing some CI
             run: |
               echo Hello world
-              sleep 5
+              date
+              sleep 60
+              date
