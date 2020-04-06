@@ -76,5 +76,5 @@ jobs:
               issue_number: ${{ env.PULL_REQUEST_NUMBER }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: ['automerge','documentation']
+              labels: ['automerge']
             })
