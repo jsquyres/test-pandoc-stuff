@@ -27,7 +27,7 @@ with open("filename") as f:
 ```
 
 Hello world.  Again.  Yow.  Blarg.  Yowza.  Hello.  Goodbye.  Today. All.
-Frog. Tiger. Mailbox. Sunshine. Kangaroo. Gazelle. Hippo.
+Frog. Tiger. Mailbox. Sunshine. Kangaroo. Gazelle. Hippo. Flamingo.
 
 There are two components to the libfabric software:
 
