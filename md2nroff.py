@@ -58,9 +58,9 @@ shortfile = re.sub(f'\.{man_section}.md$', '', shortfile)
 source_content = re.sub(r'\[(.+)\]\((.+)\)', r'\1', source_content)
 
 # Add the pandoc header
-source_content = f"""% {shortfile}({man_section}) Libfoobar | OMPI_VERSION
-% The Foo Organization
-% OMPI_DATE
+source_content = f"""% {shortfile}({man_section}) #PACKAGE_NAME# | #VERSION#
+% #ORGANIZATION#
+% #DATE#
 
 {source_content}"""
 

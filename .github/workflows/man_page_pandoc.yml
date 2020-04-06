@@ -59,7 +59,7 @@ jobs:
       uses: vsoch/pull-request-action@1.0.5
       if: ${{ env.NEED_GIT_COMMIT == 1 }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.OMPITEAM_PAT }}
         BRANCH_PREFIX: "md2nroff/"
         PULL_REQUEST_BRANCH: "master"
         PULL_REQUEST_BODY: "The Nroff Elves created these man pages, just for you!"
@@ -70,11 +70,11 @@ jobs:
       uses: actions/github-script@0.9.0
       if: ${{ env.NEED_GIT_COMMIT == 1 }}
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.OMPI_TEAM_PAT }}
         script: |
             github.issues.addLabels({
               issue_number: ${{ env.PULL_REQUEST_NUMBER }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: ['automerge']
+              labels: ['automerge','documentation']
             })
