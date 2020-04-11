@@ -1,9 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+
+# This script is friendly to both Python 2 and Python 3.
 
 import os
 import re
 import tempfile
 import argparse
+import datetime
 import subprocess
 
 from pprint import pprint
@@ -15,6 +18,11 @@ parser.add_argument('--source', required=True,
                     help="Source Markdown file")
 parser.add_argument('--dest', required=True,
                     help="Destination nroff file")
+parser.add_argument('--pandoc',
+                    default='pandoc',
+                    help='Location of pandoc executable')
+parser.add_argument('--verbose', action='store_true',
+                    help="Show additional information about processing")
 args = parser.parse_args()
 
 #--------------------------------------------------------------------------
@@ -31,7 +39,7 @@ dest_content = ''.join(dest_lines)
 
 # Read in the source
 if not os.path.exists(args.source):
-    print(f"Error: {args.source} does not exist")
+    print("Error: {file} does not exist".format(file=args.source))
     exit(1)
 
 with open(args.source) as f:
@@ -48,9 +56,12 @@ if not result:
 man_section = int(result.group(1))
 
 shortfile = os.path.basename(args.source)
-shortfile = re.sub(f'\.{man_section}.md$', '', shortfile)
+shortfile = re.sub('\.{man_section}.md$'.format(man_section=man_section),
+                    '', shortfile)
 
 #--------------------------------------------------------------------------
+
+today = datetime.date.today().isoformat()
 
 # Pandoc does not handle markdown links in output nroff properly, so just remove
 # all links.  Some versions of Pandoc ignore the links, but others handle it
@@ -58,26 +69,39 @@ shortfile = re.sub(f'\.{man_section}.md$', '', shortfile)
 source_content = re.sub(r'\[(.+)\]\((.+)\)', r'\1', source_content)
 
 # Add the pandoc header
-source_content = f"""% {shortfile}({man_section}) #PACKAGE_NAME# | #VERSION#
-% #ORGANIZATION#
-% #DATE#
+source_content = """---
+section: {man_section}
+title: {shortfile}
+header: Open MPI
+footer: {today}
+---
 
-{source_content}"""
+{source_content}""".format(man_section=man_section, shortfile=shortfile,
+                           today=today, source_content=source_content)
 
 #--------------------------------------------------------------------------
 
-print(f"*** Processing: {args.source} --> {args.dest}")
+if args.verbose:
+    print("*** Processing: {source} --> {dest}".format(source=args.source,
+                                                       dest=args.dest))
 
-cmd = ['pandoc', '-s', '--from=markdown', '--to=man']
-out = subprocess.run(cmd, input=source_content.encode('utf-8'),
-                     capture_output=True, check=True)
-pandoc_rendered = out.stdout.decode('utf-8')
+# This is friendly to both Python 2 and Python 3
+cmd = [args.pandoc, '-s', '--from=markdown', '--to=man']
+out = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+pandoc_rendered, pandoc_stderr = out.communicate(source_content.encode('utf-8'))
+pandoc_rendered = pandoc_rendered.decode('utf-8')
 
 if pandoc_rendered != dest_content:
-    print(f"Content has changed; writing new file {args.dest}")
+    if args.verbose:
+        print("Content has changed; writing new file {dest}"
+               .format(dest=args.dest))
     with open(args.dest, 'w') as f:
         f.write(pandoc_rendered)
 else:
-    print(f"Content has not changed; not writing new file {args.dest}")
+    if args.verbose:
+        print("Content has not changed; not writing new file {dest}"
+              .format(dest=args.dest))
 
 exit(0)

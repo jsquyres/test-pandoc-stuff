@@ -19,17 +19,6 @@ referred to as RDMA, allows an application to directly access network
 resources without operating system interventions.  Data transfers can
 occur directly to and from application memory.
 
-Some Python code:
-
-```python
-with open("filename") as f:
-    lines = f.readlines()
-```
-
-Hello world.  Again.  Yow.  Blarg.  Yowza.  Hello.  Goodbye.  Today. All.
-Frog. Tiger. Mailbox. Sunshine. Kangaroo. Gazelle. Hippo. Flamingo. Penguin.
-Zebra. Platypus. Python. Lion. Sparrow.
-
 There are two components to the libfabric software:
 
 *Fabric Providers*
