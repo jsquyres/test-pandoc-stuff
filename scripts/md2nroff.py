@@ -69,12 +69,9 @@ today = datetime.date.today().isoformat()
 source_content = re.sub(r'\[(.+)\]\((.+)\)', r'\1', source_content)
 
 # Add the pandoc header
-source_content = """---
-section: {man_section}
-title: {shortfile}
-header: Open MPI
-footer: {today}
----
+source_content = """% {shortfile}({man_section}) Open MPI | OMPI_VERSION
+% The Open MPI Community
+% {today}
 
 {source_content}""".format(man_section=man_section, shortfile=shortfile,
                            today=today, source_content=source_content)
