@@ -1,4 +1,4 @@
 {
-    "cherry_pick_required" : 0,
+    "cherry_pick_required" : 1,
     "skip_message" : "/notacherrypick"
 }
