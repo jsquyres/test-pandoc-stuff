@@ -5,6 +5,7 @@ import re
 import git
 import json
 import logging
+import argparse
 
 GITHUB_WORKSPACE = os.environ.get('GITHUB_WORKSPACE')
 GITHUB_SHA       = os.environ.get('GITHUB_SHA')
@@ -16,10 +17,18 @@ if GITHUB_WORKSPACE is None or GITHUB_SHA is None or GITHUB_BASE_REF is None:
 
 #----------------------------------------------------------------------------
 
+parser = argparse.ArgumentParser(description='Git cherry pick checker')
+parser.add_argument('--notacherrypick',
+                    action="store_true",
+                    default=False,
+                    help="If this flag is used, then cherry pick messages are not required (regardless of the cherry_pick_required config setting)")
+args = parser.parse_args()
+
+#----------------------------------------------------------------------------
+
 # Defaults, unless overridden by .github/workflows/cherry-pick-checker.json
 config = {
     'cherry_pick_required' : False,
-    'skip_message' : '/notacherrypick',
 }
 
 filename = os.path.join(GITHUB_WORKSPACE, '.github', 'workflows', 'cherry-pick-checker.json')
@@ -29,6 +38,11 @@ if os.path.exists(filename):
     for key in new_config:
         config[key] = new_config[key]
 
+# If --notacherrypick was specified, then disable the requirement for cherry
+# pick messages
+if args.notacherrypick:
+    config['cherry_pick_required'] = False
+
 #----------------------------------------------------------------------------
 
 # This is the regexp we'll be looking for
@@ -36,8 +50,9 @@ prog = re.compile(r'\(cherry picked from commit ([a-z0-9]+)\)')
 
 #----------------------------------------------------------------------------
 
-# Get a list of commits that we'll be examining.  Use the programtic form of
-# "git log ^BASE_REF HEAD" to do the heavy lifting to find that set of commits.
+# Get a list of commits that we'll be examining.  Use the progromatic form of
+# "git log BASE_REF..HEAD" (i.e., "git log ^BASE_REF HEAD") to do the heavy
+# lifting to find that set of commits.
 git_cli = git.cmd.Git(GITHUB_WORKSPACE)
 commits = git_cli.log(f"--pretty=format:%h", f"origin/{GITHUB_BASE_REF}..{GITHUB_SHA}").splitlines()
 
@@ -65,19 +80,12 @@ for hash in commits:
         skipped.append(hash)
         continue
 
-    # If the commit message contains "/notacherrypick", then this commit
-    # was specifically not a cherry pick, and it's ok.
-    if (len(config['skip_message']) > 0 and
-        config['skip_message'] in commit.message):
-        skipped.append(hash)
-        continue
-
     # Otherwise, find all cherry pick messages and check to make sure that the
     # commit message they refer to exists
-    found = False
+    found_cherry_pick_line = False
     non_existent = dict()
     for match in prog.findall(commit.message):
-        found = True
+        found_cherry_pick_line = True
         try:
             c = repo.commit(match)
         except ValueError as e:
@@ -93,8 +101,8 @@ for hash in commits:
             # effectively give us de-duplication for free).
             non_existent[match] = True
 
-    # Process the results
-    if found:
+    # Process the results for this commit
+    if found_cherry_pick_line:
         if len(non_existent) == 0:
             found_happy.append(hash)
         else:
@@ -109,25 +117,25 @@ for hash in commits:
 
 #----------------------------------------------------------------------------
 
-def print_list(msg, items):
+def print_list(msg, items, prefix=""):
     print(msg)
     for item in items:
-        print(f"* {item}")
+        print(f"{prefix}* {item}")
 
 passed = True
-
-# If we found commits with bad cherry pick messages, this *always* causes
-# the test to fail.
 if len(found_happy):
-    print_list("\nThe following commits contained messages with good cherry pick comments:",
-                found_happy)
+    print_list("""
+The following commits contained messages with good cherry pick comments:""",
+               found_happy)
 
+# If we found commits with cherry pick messages that refer to non-existent
+# commits, this *always* causes the test to fail.
 if len(found_not_happy):
     passed = False
     print_list("""
-The following commits contained messages with erroneous cherry pick comments:
-(*** these commits caused the test to fail ***)""",
-                found_not_happy)
+::error ::The following commits contained messages with erroneous cherry pick comments:
+::error ::(*** these commits caused the test to fail ***)""",
+                found_not_happy, prefix="::error ::")
 
 # If we found commits without cherry pick messages, it depends on the config
 # as to whether that causes the test to fail or not
@@ -135,17 +143,19 @@ if len(not_found):
     prefix = ""
     suffix = ""
     middle = "did NOT cause"
+    error  = ""
 
     if config['cherry_pick_required']:
         passed = False
         prefix = "*** "
         middle = "caused"
         suffix = " ***"
+        error  = "::error ::"
 
     msg = f"""
-The following commits did not contain cherry pick notices in their commit messages:
-({prefix}these commits {middle} the test to fail{suffix}):"""
-    print_list(msg, not_found)
+{error}The following commits did not contain cherry pick notices in their commit messages:
+{error}({prefix}these commits {middle} the test to fail{suffix}):"""
+    print_list(msg, not_found, prefix=error)
 
 if len(skipped):
     print_list("\nThe following commits were skipped (reverts, merges, skips):", skipped)
