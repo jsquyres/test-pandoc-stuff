@@ -1,4 +1,4 @@
-name: Cherry pick checker
+name: Git commit checker
 
 on:
     pull_request:
@@ -31,13 +31,13 @@ jobs:
             uses: octokit/request-action@v2.x
             id: get_pr_body
             with:
-                route: GET /repos/${{ github.repository }}/pulls/${{ github.event.number }}
+              route: GET /repos/${{ github.repository }}/pulls/${{ github.event.number }}
             env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          - name: Check for cherry-picked messages in commits
+          - name: Check all git commits
             run: |
               if test "${{ contains(fromJson(steps.get_pr_body.outputs.data).body, 'bot:notacherrypick') }}" = "true"; then
                   arg="--notacherrypick"
               fi
-              $GITHUB_WORKSPACE/.github/workflows/cherry-pick-checker.py $arg
+              $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py $arg
