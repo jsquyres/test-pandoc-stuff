@@ -43,11 +43,20 @@ def print_result(good_list, bad_list, skipped_list):
 
 #----------------------------------------------------------------------------
 
-# Global regexp, because we use it every time we call check_signed_off()
-# (i.e., for each commit in this PR)
+# Global regexp, because we use it every time we call
+# check_signed_off() (i.e., for each commit in this PR)
 prog_sob = re.compile(r'Signed-off-by: (.+) <(.+)>')
 
-def check_signed_off(config, repo, commit, bad_list):
+def check_signed_off(config, repo, commit, skipped_list, bad_list):
+    # If the message starts with "Revert" or if the commit is a
+    # merge, don't require a signed-off-by
+    if commit.message.startswith("Revert "):
+        skipped_list.append(f"{commit.hexsha} (revert)")
+        return True
+    elif len(commit.parents) == 2:
+        skipped_list.append(f"{commit.hexsha} (merge)")
+        return True
+
     matches = prog_sob.search(commit.message)
     if not matches:
         bad_list.append(f"{commit.hexsha}: does not contain a valid Signed-off-by line")
@@ -57,7 +66,7 @@ def check_signed_off(config, repo, commit, bad_list):
 
 #----------------------------------------------------------------------------
 
-def check_email(config, repo, commit, bad_list):
+def check_email(config, repo, commit, skipped_list, bad_list):
     email = commit.committer.email.lower()
 
     for pattern in config['bad emails']:
@@ -74,7 +83,32 @@ def check_email(config, repo, commit, bad_list):
 # (i.e., for each commit in this PR)
 prog_cp = re.compile(r'\(cherry picked from commit ([a-z0-9]+)\)')
 
-def check_cherry_pick(config, repo, commit, bad_list):
+def check_cherry_pick(config, repo, commit, skipped_list, bad_list):
+    def _is_entriely_submodule_updates(repo, commit):
+        # If it's a merge commit, that doesn't fit our definition of
+        # "entirely submodule updates"
+        if len(commit.parents) == 2:
+            return False
+
+        # Check the diffs of this commit compared to the prior commit,
+        # and see if all the changes are updates to submodules.
+        submodule_paths = [ x.path for x in repo.submodules ]
+        diffs = repo.commit(f"{commit}~1").tree.diff(commit)
+        for diff in diffs:
+            if diff.a_path not in submodule_paths:
+                # If we get here, we found a diff that was not exclusively
+                # a submodule update.
+                return False
+
+        # If we get here, then all the diffs were submodule updates.
+        return True
+
+    # If this commit is solely comprised of submodule updates, don't
+    # require a cherry pick message.
+    if len(repo.submodules) > 0 and _is_entirely_submodule_updates(repo, commit):
+        skipped_list.append(f"{commit.hexsha} (submodules updates)")
+        return True
+
     non_existent = dict()
     found_cherry_pick_line = False
     for match in prog_cp.findall(commit.message):
@@ -82,16 +116,18 @@ def check_cherry_pick(config, repo, commit, bad_list):
         try:
             c = repo.commit(match)
         except ValueError as e:
-            # These errors mean that the git library recognized the hash as
-            # a valid commit, but the GitHub Action didn't fetch the entire
-            # repo, so we don't have all the meta data about this commit.
-            # Bottom line: it's a good hash.  So -- no error here.
+            # These errors mean that the git library recognized the
+            # hash as a valid commit, but the GitHub Action didn't
+            # fetch the entire repo, so we don't have all the meta
+            # data about this commit.  Bottom line: it's a good hash.
+            # So -- no error here.
             pass
         except git.BadName as e:
-            # Use a dictionary to track the non-existent hashes, just on the
-            # off chance that the same non-existent hash exists more than
-            # once in a single commit message (i.e., the dictionary will
-            # effectively give us de-duplication for free).
+            # Use a dictionary to track the non-existent hashes, just
+            # on the off chance that the same non-existent hash exists
+            # more than once in a single commit message (i.e., the
+            # dictionary will effectively give us de-duplication for
+            # free).
             non_existent[match] = True
 
     # Process the results for this commit
@@ -117,13 +153,14 @@ def check_cherry_pick(config, repo, commit, bad_list):
 #----------------------------------------------------------------------------
 
 def check_all_commits(config):
-    # Get a list of commits that we'll be examining.  Use the progromatic form of
-    # "git log BASE_REF..HEAD" (i.e., "git log ^BASE_REF HEAD") to do the heavy
-    # lifting to find that set of commits.
+    # Get a list of commits that we'll be examining.  Use the
+    # progromatic form of "git log BASE_REF..HEAD" (i.e., "git log
+    # ^BASE_REF HEAD") to do the heavy lifting to find that set of
+    # commits.
     git_cli = git.cmd.Git(GITHUB_WORKSPACE)
     commits = git_cli.log(f"--pretty=format:%h", f"origin/{GITHUB_BASE_REF}..{GITHUB_SHA}").splitlines()
 
-    #----------------------------------------------------------------------------
+    #------------------------------------------------------------------------
 
     # Get a handle we can use to search for hashes in the git DAG
     repo = git.Repo(GITHUB_WORKSPACE)
@@ -134,25 +171,16 @@ def check_all_commits(config):
     for hash in commits:
         commit = repo.commit(hash)
 
-        # Skip the GITHUB_SHA, because that's the Github artificial merge hash
-        # for this PR
+        # Skip the GITHUB_SHA, because that's the Github artificial
+        # merge hash for this PR
         if hash == GITHUB_SHA[:len(hash)] and len(commit.parents) == 2:
-            continue
-
-        # If the message starts with "Revert" or if the commit is a merge, don't
-        # require a signed-off-by
-        if commit.message.startswith("Revert "):
-            skipped_list.append(f"{commit.hexsha} (revert)")
-            continue
-        elif len(commit.parents) == 2:
-            skipped_list.append(f"{commit.hexsha} (merge)")
             continue
 
         # Do the checks
         # The checks will add the commit to the bad_list if they fail
-        good  = check_signed_off(config, repo, commit, bad_list)
-        good &= check_email(config, repo, commit, bad_list)
-        good &= check_cherry_pick(config, repo, commit, bad_list)
+        good  = check_signed_off(config, repo, commit, skipped_list, bad_list)
+        good &= check_email(config, repo, commit, skipped_list, bad_list)
+        good &= check_cherry_pick(config, repo, commit, skipped_list, bad_list)
 
         # If all tests pass, add the commit to the good_list
         if good:
@@ -178,15 +206,16 @@ def load_config(args):
         ],
     }
 
-    filename = os.path.join(GITHUB_WORKSPACE, '.github', 'workflows', 'git-commit-checks.json')
+    filename = os.path.join(GITHUB_WORKSPACE, '.github',
+                            'workflows', 'git-commit-checks.json')
     if os.path.exists(filename):
         with open(filename) as fp:
             new_config = json.load(fp)
         for key in new_config:
             config[key] = new_config[key]
 
-    # If --notacherrypick was specified, then disable the requirement for cherry
-    # pick messages
+    # If --notacherrypick was specified, then disable the requirement
+    # for cherry pick messages
     if args.notacherrypick:
         config['cherry pick required'] = False
 
