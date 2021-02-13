@@ -24,20 +24,10 @@ jobs:
             with:
               python-version: '3.x'
 
-          - name: Get the GitPython module
-            run: pip install gitpython
-
-          - name: Download PR main description text
-            uses: octokit/request-action@v2.x
-            id: get_pr_body
-            with:
-              route: GET /repos/${{ github.repository }}/pulls/${{ github.event.number }}
-            env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          - name: Get the GitPython and PyGithub modules
+            run: pip install gitpython PyGithub
 
           - name: Check all git commits
-            run: |
-              if test "${{ contains(fromJson(steps.get_pr_body.outputs.data).body, 'bot:notacherrypick') }}" = "true"; then
-                  arg="--notacherrypick"
-              fi
-              $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py $arg
+            run: $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
