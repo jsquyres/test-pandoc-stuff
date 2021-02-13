@@ -1,89 +1,161 @@
 #!/usr/bin/env python3
 
+"""
+
+Sanity tests on git commits in a Github Pull Request.
+
+This script is designed to run as a Github Action.  It assumes environment
+variables that are available in the Github Action environment.  Specifically:
+
+* GITHUB_WORKSPACE: directory where the git clone is located
+* GITHUB_SHA: the git commit SHA of the artificial Github PR test merge commit
+* GITHUB_BASE_REF: the git ref for the base branch
+
+This script tests each git commit between (and not including) GITHUB_SHA and
+GITHUB_BASE_REF multiple ways:
+
+1. Ensure that the committer and author do not match any bad patterns (e.g.,
+"root@", "localhost", etc.).
+
+2. Ensure that a proper "Signed-off-by" line exists in the commit message.
+    - Merge commits and reverts are exempted from this check.
+
+3. If required (by the git-commit-checks.json config file), ensure that a
+"(cherry picked from commit ...)" line exists in the commit message.
+    - Commits that are solely comprised of submodule updates are exempted from
+      this check.
+    - This check can also be disabled by adding "bot:notacherrypick" in the
+      Pull Request description.
+
+4. If a "(cherry picked from commit ...)" message exists, ensure that the commit
+hash it mentions exists in the git repository.
+
+If all checks pass, the script exits with status 0.  Otherwise, it exits with
+status 1.
+
+"""
+
 import os
 import re
 import git
 import json
+import copy
 import argparse
 
-GITHUB_WORKSPACE = os.environ.get('GITHUB_WORKSPACE')
-GITHUB_SHA       = os.environ.get('GITHUB_SHA')
-GITHUB_BASE_REF  = os.environ.get('GITHUB_BASE_REF')
+from github import Github
+
+GOOD = "good"
+BAD  = "bad"
+
+GITHUB_WORKSPACE  = os.environ.get('GITHUB_WORKSPACE')
+GITHUB_SHA        = os.environ.get('GITHUB_SHA')
+GITHUB_BASE_REF   = os.environ.get('GITHUB_BASE_REF')
+GITHUB_TOKEN      = os.environ.get('GITHUB_TOKEN')
+GITHUB_REPOSITORY = os.environ.get('GITHUB_REPOSITORY')
+GITHUB_REF        = os.environ.get('GITHUB_REF')
 
 # Sanity check
-if GITHUB_WORKSPACE is None or GITHUB_SHA is None or GITHUB_BASE_REF is None:
+if (GITHUB_WORKSPACE is None or
+    GITHUB_SHA is None or
+    GITHUB_BASE_REF is None or
+    GITHUB_TOKEN is None or
+    GITHUB_REPOSITORY is None or
+    GITHUB_REF is None):
     print("Error: this script is designed to run as a Github Action")
     exit(1)
 
 #----------------------------------------------------------------------------
 
-def print_result(good_list, bad_list, skipped_list):
-    def _print_list(msg, items, prefix=""):
-        print(msg)
-        for item in items:
-            print(f"{prefix}- {item}")
+"""
+Simple helper to make a 1-line git commit message summary.
+"""
+def make_commit_message(repo, hash):
+    commit  = repo.commit(hash)
+    lines   = commit.message.split('\n')
+    message = lines[0][:50]
+    if len(lines[0]) > 50:
+        message += "..."
 
-    passed = True
-    if len(good_list):
-        msg = "\nThe following commits passed all tests:"
-        _print_list(msg, good_list)
-
-    if len(bad_list):
-        passed = False
-        # The "::error ::" token will cause Github to highlight these
-        # lines as errors
-        msg = f"\n::error ::The following commits caused this test to fail"
-        _print_list(msg, bad_list, prefix="::error ::")
-
-    if len(skipped_list):
-        msg = "\nThe following commits were skipped (reverts, merges):"
-        _print_list(msg, skipped_list)
-
-    return passed
+    return message
 
 #----------------------------------------------------------------------------
 
-# Global regexp, because we use it every time we call
-# check_signed_off() (i.e., for each commit in this PR)
+"""
+The results dictionary is in the following format:
+
+    results[GOOD or BAD][commit hash][check name] = message
+
+If the message is None, there's nothing to print.
+
+A git commit hash will be in either the GOOD or the BAD results -- not both.
+"""
+def print_results(results, repo, hashes):
+    def _print_list(entries, prefix=""):
+        for hash, entry in entries.items():
+            print(f"{prefix}* {hash[:8]}: {make_commit_message(repo, hash)}")
+            for check_name, message in entry.items():
+                if message is not None:
+                    print(f"{prefix}    * {check_name}: {message}")
+
+    # First, print all the commits that have only-good results
+    if len(results[GOOD]) > 0:
+        print("\nThe following commits passed all tests:\n")
+        _print_list(results[GOOD])
+
+    # Now print all the results that are bad
+    if len(results[BAD]) > 0:
+        # The "::error ::" token will cause Github to highlight these
+        # lines as errors
+        print(f"\n::error ::The following commits caused this test to fail\n")
+        _print_list(results[BAD], "::error ::")
+
+#----------------------------------------------------------------------------
+
+"""
+Global regexp, because we use it every time we call
+check_signed_off() (i.e., for each commit in this PR)
+"""
 prog_sob = re.compile(r'Signed-off-by: (.+) <(.+)>')
 
-def check_signed_off(config, repo, commit, skipped_list, bad_list):
+def check_signed_off(config, repo, commit):
     # If the message starts with "Revert" or if the commit is a
     # merge, don't require a signed-off-by
     if commit.message.startswith("Revert "):
-        skipped_list.append(f"{commit.hexsha} (revert)")
-        return True
+        return GOOD, "skipped (revert)"
     elif len(commit.parents) == 2:
-        skipped_list.append(f"{commit.hexsha} (merge)")
-        return True
+        return GOOD, "skipped (merge)"
 
     matches = prog_sob.search(commit.message)
     if not matches:
-        bad_list.append(f"{commit.hexsha}: does not contain a valid Signed-off-by line")
-        return False
+        return BAD, "does not contain a valid Signed-off-by line"
 
-    return True
-
-#----------------------------------------------------------------------------
-
-def check_email(config, repo, commit, skipped_list, bad_list):
-    email = commit.committer.email.lower()
-
-    for pattern in config['bad emails']:
-        match = re.search(pattern, email)
-        if match:
-            bad_list.append(f"{commit.hexsha}: committer email address contains '{pattern}'")
-            return False
-
-    return True
+    return GOOD, None
 
 #----------------------------------------------------------------------------
 
-# Global regexp, because we use it every time we call check_cherry_pick()
-# (i.e., for each commit in this PR)
+def check_email(config, repo, commit):
+    emails = {
+        "author"    : commit.author.email.lower(),
+        "committer" : commit.committer.email.lower(),
+    }
+
+    for id, email in emails.items():
+        for pattern in config['bad emails']:
+            match = re.search(pattern, email)
+            if match:
+                return BAD, f"{id} email address ({email}) contains '{pattern}'"
+
+    return GOOD, None
+
+#----------------------------------------------------------------------------
+
+"""
+Global regexp, because we use it every time we call check_cherry_pick()
+(i.e., for each commit in this PR)
+"""
 prog_cp = re.compile(r'\(cherry picked from commit ([a-z0-9]+)\)')
 
-def check_cherry_pick(config, repo, commit, skipped_list, bad_list):
+def check_cherry_pick(config, repo, commit):
     def _is_entriely_submodule_updates(repo, commit):
         # If it's a merge commit, that doesn't fit our definition of
         # "entirely submodule updates"
@@ -106,8 +178,7 @@ def check_cherry_pick(config, repo, commit, skipped_list, bad_list):
     # If this commit is solely comprised of submodule updates, don't
     # require a cherry pick message.
     if len(repo.submodules) > 0 and _is_entirely_submodule_updates(repo, commit):
-        skipped_list.append(f"{commit.hexsha} (submodules updates)")
-        return True
+        return GOOD, "skipped (submodules updates)"
 
     non_existent = dict()
     found_cherry_pick_line = False
@@ -133,68 +204,89 @@ def check_cherry_pick(config, repo, commit, skipped_list, bad_list):
     # Process the results for this commit
     if found_cherry_pick_line:
         if len(non_existent) == 0:
-            return True
+            return GOOD, None
         else:
-            str = f"{commit.hexsha}: contains a cherry pick message that refers to non-existent commit"
+            str = f"contains a cherry pick message that refers to non-existent commit"
             if len(non_existent) > 1:
                 str += "s"
             str += ": "
             str += ", ".join(non_existent)
-            bad_list.append(str)
-            return False
+            return BAD, str
 
     else:
         if config['cherry pick required']:
-            bad_list.append(f"{commit.hexsha}: does not include a cherry pick message")
-            return False
+            return BAD, "does not include a cherry pick message"
         else:
-            return True
+            return GOOD, None
 
 #----------------------------------------------------------------------------
 
-def check_all_commits(config):
-    # Get a list of commits that we'll be examining.  Use the
-    # progromatic form of "git log BASE_REF..HEAD" (i.e., "git log
-    # ^BASE_REF HEAD") to do the heavy lifting to find that set of
-    # commits.
+def check_all_commits(config, repo):
+    # Get a list of commits that we'll be examining.  Use the progromatic form
+    # of "git log GITHUB_BASE_REF..GITHUB_SHA" (i.e., "git log ^GITHUB_BASE_REF
+    # GITHUB_SHA") to do the heavy lifting to find that set of commits.
     git_cli = git.cmd.Git(GITHUB_WORKSPACE)
-    commits = git_cli.log(f"--pretty=format:%h", f"origin/{GITHUB_BASE_REF}..{GITHUB_SHA}").splitlines()
+    hashes  = git_cli.log(f"--pretty=format:%h", f"origin/{GITHUB_BASE_REF}..{GITHUB_SHA}").splitlines()
+
+    # The first entry in the list will be the artificial Github merge commit for
+    # this PR. We don't want to examine this commit.
+    del hashes[0]
 
     #------------------------------------------------------------------------
 
-    # Get a handle we can use to search for hashes in the git DAG
-    repo = git.Repo(GITHUB_WORKSPACE)
+    # Make an empty set of nested dictionaries to fill in, below. We initially
+    # create a "full" template dictionary (with all the hashes for both GOOD and
+    # BAD results), but will trim some of them later.
+    template = { hash : dict() for hash in hashes }
+    results  = {
+        GOOD : copy.deepcopy(template),
+        BAD  : copy.deepcopy(template),
+    }
 
-    good_list    = list()
-    bad_list     = list()
-    skipped_list = list()
-    for hash in commits:
-        commit = repo.commit(hash)
+    for hash in hashes:
+        overall = GOOD
 
-        # Skip the GITHUB_SHA, because that's the Github artificial
-        # merge hash for this PR
-        if hash == GITHUB_SHA[:len(hash)] and len(commit.parents) == 2:
-            continue
+        # Do the checks on this commit
+        commit  = repo.commit(hash)
+        for check_fn in [check_signed_off, check_email, check_cherry_pick]:
+            result, message = check_fn(config, repo, commit)
+            overall         = BAD if result == BAD else overall
 
-        # Do the checks
-        # The checks will add the commit to the bad_list if they fail
-        good  = check_signed_off(config, repo, commit, skipped_list, bad_list)
-        good &= check_email(config, repo, commit, skipped_list, bad_list)
-        good &= check_cherry_pick(config, repo, commit, skipped_list, bad_list)
+            results[result][hash][check_fn.__name__] = message
 
-        # If all tests pass, add the commit to the good_list
-        if good:
-            lines = commit.message.split('\n')
-            first = lines[0][:50]
-            if len(lines[0]) > 50:
-                first += "..."
-            good_list.append(f'{commit} ("{first}")')
+        # Trim the results dictionary so that a hash only appears in GOOD *or*
+        # BAD -- not both. Specifically:
+        #
+        # 1. If a hash has BAD results, delete all of its results from GOOD.
+        # 2. If a hash has only GOOD results, delete its empty entry from BAD.
+        if overall == BAD:
+            del results[GOOD][hash]
+        else:
+            del results[BAD][hash]
 
-    return good_list, bad_list, skipped_list
+    return results, hashes
 
 #----------------------------------------------------------------------------
 
-def load_config(args):
+"""
+If "bot:notacherrypick" is in the PR description, then disable the
+cherry-pick message requirement.
+"""
+def check_github_pr_description(config):
+    g      = Github(GITHUB_TOKEN)
+    repo   = g.get_repo(GITHUB_REPOSITORY)
+
+    # Extract the PR number from GITHUB_REF
+    match  = re.search("/(\d+)/", GITHUB_REF)
+    pr_num = int(match.group(1))
+    pr     = repo.get_pull(pr_num)
+
+    if "bot:notacherrypick" in pr.body:
+        config['cherry pick required'] = False
+
+#----------------------------------------------------------------------------
+
+def load_config():
     # Defaults
     config = {
         'cherry pick required' : False,
@@ -206,6 +298,8 @@ def load_config(args):
         ],
     }
 
+    # If the config file exists, read it in and replace default values
+    # with the values from the file.
     filename = os.path.join(GITHUB_WORKSPACE, '.github',
                             'workflows', 'git-commit-checks.json')
     if os.path.exists(filename):
@@ -214,34 +308,19 @@ def load_config(args):
         for key in new_config:
             config[key] = new_config[key]
 
-    # If --notacherrypick was specified, then disable the requirement
-    # for cherry pick messages
-    if args.notacherrypick:
-        config['cherry pick required'] = False
-
     return config
 
 #----------------------------------------------------------------------------
 
-def setup_cli():
-    parser = argparse.ArgumentParser(description='Git cherry pick checker')
-    parser.add_argument('--notacherrypick',
-                        action="store_true",
-                        default=False,
-                        help="If this flag is used, then cherry pick messages are not required (regardless of the 'cherry pick required' config setting)")
-    args = parser.parse_args()
-
-    return args
-
-#----------------------------------------------------------------------------
-
 def main():
-    args   = setup_cli()
-    config = load_config(args)
-    good_list, bad_list, skipped_list = check_all_commits(config)
-    passed = print_result(good_list, bad_list, skipped_list)
+    config = load_config()
+    check_github_pr_description(config)
 
-    if passed:
+    repo = git.Repo(GITHUB_WORKSPACE)
+    results, hashes = check_all_commits(config, repo)
+    print_results(results, repo, hashes)
+
+    if len(results[BAD]) == 0:
         print("\nTest passed: everything was good!")
         exit(0)
     else:
