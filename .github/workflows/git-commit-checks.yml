@@ -1,11 +1,17 @@
 name: GitHub Action CI
 
 on:
-    issue_comment
+  issue_comment:
+  pull_request:
+        types:
+          - opened
+          - synchronize
+          - edited
 
 jobs:
     ci:
         name: Git commit checker
+        if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
           - name: Check out the code
