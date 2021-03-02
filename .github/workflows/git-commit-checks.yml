@@ -8,6 +8,8 @@ on:
           - opened
           - synchronize
           - edited
+
+on:
     issue_comment:
         # We also want this check run any time anyone adds a comment
         # to a PR.  We can't seem to filter on when a comment is
