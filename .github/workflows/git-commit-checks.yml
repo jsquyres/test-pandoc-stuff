@@ -11,7 +11,7 @@ on:
 jobs:
     ci:
         name: Git commit checker
-        if: ${{ github.event.issue.pull_request }}
+        # if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
           - name: Check out the code
