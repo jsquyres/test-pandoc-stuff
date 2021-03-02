@@ -1,14 +1,7 @@
 name: GitHub Action CI
 
 on:
-    issue_comment:
-    pull_request:
-        # We don't need this to be run on all types of PR behavior
-        # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request
-        types:
-          - opened
-          - synchronize
-          - edited
+    issue_comment
 
 jobs:
     ci:
