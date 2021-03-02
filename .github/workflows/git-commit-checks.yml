@@ -31,7 +31,7 @@ jobs:
                 # Get all branches and history
                 fetch-depth: 0
 
-          - name: List open pull requests
+          - name: List open pull requests -- only in a repo!
             run: hub pr list
             env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
