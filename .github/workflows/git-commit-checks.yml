@@ -1,25 +1,13 @@
 name: GitHub Action CI
 
 on:
+    issue_comment:
     pull_request:
         # We don't need this to be run on all types of PR behavior
         # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request
         types:
           - opened
           - synchronize
-          - edited
-
-on:
-    issue_comment:
-        # We also want this check run any time anyone adds a comment
-        # to a PR.  We can't seem to filter on when a comment is
-        # created/edited that contains a magic token like
-        # "bot:retest", so just run it *every* time for
-        # simplicity. The check is short enough that this doesn't seem
-        # to matter.
-        # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#issue_comment
-        types:
-          - created
           - edited
 
 jobs:
