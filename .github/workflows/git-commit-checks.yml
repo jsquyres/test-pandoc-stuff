@@ -8,6 +8,17 @@ on:
           - opened
           - synchronize
           - edited
+    issue_comment:
+        # We also want this check run any time anyone adds a comment
+        # to a PR.  We can't seem to filter on when a comment is
+        # created/edited that contains a magic token like
+        # "bot:retest", so just run it *every* time for
+        # simplicity. The check is short enough that this doesn't seem
+        # to matter.
+        # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#issue_comment
+        types:
+          - created
+          - edited
 
 jobs:
     ci:
@@ -19,6 +30,11 @@ jobs:
             with:
                 # Get all branches and history
                 fetch-depth: 0
+
+          - name: List open pull requests
+            run: hub pr list
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           - name: Setup Python
             uses: actions/setup-python@v2
