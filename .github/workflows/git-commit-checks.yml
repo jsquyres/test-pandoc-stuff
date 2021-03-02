@@ -1,37 +1,35 @@
 name: GitHub Action CI
 
 on:
-    pull_request:
-        # We don't need this to be run on all types of PR behavior
-        # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request
-        types:
-          - opened
-          - synchronize
-          - edited
-    issue_comment:
-        # We also want this check run any time anyone adds a comment
-        # to a PR.  We can't seem to filter on when a comment is
-        # created/edited that contains a magic token like
-        # "bot:retest", so just run it *every* time for
-        # simplicity. The check is short enough that this doesn't seem
-        # to matter.
-        # See https://docs.github.com/en/actions/reference/events-that-trigger-workflows#issue_comment
-        types:
-          - created
-          - edited
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, edited]
 
 jobs:
     ci:
         name: Git commit checker
+        # if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
+          - uses: khan/pull-request-comment-trigger@master
+            id: check
+            with:
+              trigger: 'bot:retest'
+              reaction: rocket
+            env:
+              GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
+          - run: 'echo Found it!'
+            if: steps.check.outputs.triggered == 'true'
+
           - name: Check out the code
             uses: actions/checkout@v2
             with:
                 # Get all branches and history
                 fetch-depth: 0
 
-          - name: List open pull requests
+          - name: List open pull requests -- only in a repo!
             run: hub pr list
             env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
