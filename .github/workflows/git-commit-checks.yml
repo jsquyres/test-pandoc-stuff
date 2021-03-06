@@ -10,8 +10,12 @@ jobs:
     ci:
         name: Git commit checker
         # if: ${{ github.event.issue.pull_request }}
+        # Meaningless change
         runs-on: ubuntu-latest
         steps:
+          - name: show the environment
+            run: env | sort
+
           - uses: khan/pull-request-comment-trigger@master
             id: check
             with:
@@ -28,11 +32,6 @@ jobs:
             with:
                 # Get all branches and history
                 fetch-depth: 0
-
-          - name: List open pull requests -- only in a repo!
-            run: hub pr list
-            env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           - name: Setup Python
             uses: actions/setup-python@v2
