@@ -94,14 +94,6 @@ jobs:
                     comment_id: ${{ github.event.comment.id }},
                     content: 'rocket' });
 
-          - name: JMS DEBUG Show what we got
-            run: |
-              echo base ref ${{ steps.git-refs.outputs.GITHUB_BASE_REF }}
-              echo ref ${{ steps.git-refs.outputs.GITHUB_REF }}
-              echo retest ${{ steps.git-refs.outputs.BOT_RETEST }}
-              # JMS Force a failure
-              exit 1
-
           - name: Check out the code
             uses: actions/checkout@v2
             with:
