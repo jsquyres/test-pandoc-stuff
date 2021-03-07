@@ -78,6 +78,8 @@ jobs:
                     org: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     num: ${{ github.event.number }} });
+                console.log("JMS set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
+                console.log("JMS set-output name=GITHUB_REF::" + pr.data.head.ref);
                 console.log("::set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
                 console.log("::set-output name=GITHUB_REF::" + pr.data.head.ref);
                 console.log("::set-output name=BOT_RETEST::1");
@@ -94,7 +96,7 @@ jobs:
               echo ref ${{ steps.git-refs.outputs.GITHUB_REF }}
               echo ref ${{ steps.git-refs.outputs.BOT_RETEST }}
               # JMS Force a failure
-              exit(1)
+              exit 1
 
           - name: Check out the code
             uses: actions/checkout@v2
