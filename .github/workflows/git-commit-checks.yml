@@ -90,7 +90,8 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     ref: pr.data.head.sha,
                 });
-                console.log("JMS Got suites: " + suites.total_count);
+                console.log("JMS Got suites: " + suites);
+                console.log("JMS Got suites total count: " + suites.total_count);
                 console.log(suites.check_suites[0].app.name);
 
 
