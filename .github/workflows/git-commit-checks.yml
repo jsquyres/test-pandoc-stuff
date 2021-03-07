@@ -124,6 +124,7 @@ jobs:
           - name: Set "success" result (if we succeeded)
             if: ${{ success() }}
             uses: actions/github-script@v3
+            with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               script: |
                 console.log('I passed!')
@@ -131,6 +132,7 @@ jobs:
           - name: Set "failed" result (if we failed)
             if: ${{ failure() }}
             uses: actions/github-script@v3
+            with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               script: |
                 console.log('I failed')
