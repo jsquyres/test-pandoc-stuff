@@ -129,6 +129,7 @@ jobs:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               script: |
                 await github.checks.create({
+                    name: 'Hello kitty',
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
