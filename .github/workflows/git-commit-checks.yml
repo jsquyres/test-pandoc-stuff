@@ -70,7 +70,7 @@ jobs:
           - name: Find the corresponding PR comment and PR meta data
             id: git-refs
             uses: actions/github-script@v3
-            #if: ${{ contains(github.event.comment.body, 'bot:retest') }}
+            if: ${{ contains(github.event.comment.body, 'bot:retest') || contains(github.event.comment.body, 'bot:ompi:retest') || contains(github.event.comment.body, 'bot:github:retest') }}
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               result-encoding: string
@@ -81,6 +81,19 @@ jobs:
                     org: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     num: ${{ github.event.issue.number }} });
+
+                console.log("JMS set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
+                console.log("JMS set-output name=GITHUB_REF::" + pr.data.head.ref);
+
+                console.log("::set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
+                console.log("::set-output name=GITHUB_REF::" + pr.data.head.ref);
+                console.log("::set-output name=BOT_RETEST::1");
+
+                await github.reactions.createForIssueComment({
+                    '${{ github.repository_owner }}',
+                    '${{ github.event.repository.name }}',
+                    comment_id: ${{ github.event.comment.id }},
+                    content: 'rocket'});
 
           - name: JMS DEBUG Show what we got
             run: |
