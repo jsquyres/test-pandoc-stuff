@@ -94,6 +94,18 @@ jobs:
                     comment_id: ${{ github.event.comment.id }},
                     content: 'rocket' });
 
+                suites = await github.checks.listCheckSuites({
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    head_sha: '${{ pr.data.head.ref }}',
+                    check_name: 'Git commit checker',
+                })
+                log.console(suites)
+
+          - name: JMS DEBUG cause failure
+            run: |
+              exit 1
+
           - name: Check out the code
             if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
             uses: actions/checkout@v2
