@@ -80,7 +80,7 @@ jobs:
                 pr = await github.request('GET /repos/{org}/{repo}/pulls/{num}', {
                     org: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
-                    num: ${{ github.event.number }} });
+                    num: ${{ github.event.issue.number }} });
 
           - name: JMS DEBUG Show what we got
             run: |
