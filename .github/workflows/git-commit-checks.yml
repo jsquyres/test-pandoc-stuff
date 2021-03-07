@@ -137,7 +137,7 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
                     status: 'completed',
-                    conclusion: 'success',
+                    conclusion: failure,
                     details_url: 'https://example.com/' });
 
           - name: Set "failed" result (if we failed)
