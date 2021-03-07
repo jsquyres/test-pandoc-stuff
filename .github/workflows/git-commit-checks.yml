@@ -8,6 +8,7 @@ on:
 
 jobs:
     pull_request_job:
+        # This "name" value must be the same in all jobs
         name: Git commit checker
         if: ${{ github.event.pull_request }}
         runs-on: ubuntu-latest
@@ -56,6 +57,7 @@ jobs:
     #      couldn't find a way to basically "include" one job in
     #      another).
     issue_job:
+        # This "name" value must be the same in all jobs
         name: Git commit checker
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
@@ -130,7 +132,7 @@ jobs:
               # Note that the "name" must be the same .....
               script: |
                 await github.checks.create({
-                    name: 'Git commit checker (PR comment)',
+                    name: 'Git commit checker',
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
