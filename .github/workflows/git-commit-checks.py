@@ -4,34 +4,35 @@
 
 Sanity tests on git commits in a Github Pull Request.
 
-This script is designed to run as a Github Action.  It assumes environment
-variables that are available in the Github Action environment.  Specifically:
+This script is designed to run as a Github Action.  It assumes
+environment variables that are available in the Github Action
+environment.  Specifically:
 
 * GITHUB_WORKSPACE: directory where the git clone is located
-* GITHUB_SHA: the git commit SHA of the artificial Github PR test merge commit
-* GITHUB_BASE_REF: the git ref for the base branch
+* GITHUB_TOKEN: API token that allows us to make authenticated GitHub
+  API calls
+* GITHUB_REPOSITORY: owner/repo GitHub repository name.
 
-This script tests each git commit between (and not including) GITHUB_SHA and
-GITHUB_BASE_REF multiple ways:
+This script tests each git commit between (and not including)
+GITHUB_SHA (passed as --github-sha) and GITHUB_BASE_REF (passed as
+--github-base-ref) multiple ways:
 
 1. Ensure that the committer and author do not match any bad patterns (e.g.,
-"root@", "localhost", etc.).
-
+   "root@", "localhost", etc.).
 2. Ensure that a proper "Signed-off-by" line exists in the commit message.
-    - Merge commits and reverts are exempted from this check.
+   - Merge commits and reverts are exempted from this check.
+3. If required (by the git-commit-checks.json config file), ensure
+   that a "(cherry picked from commit ...)" line exists in the commit
+   message.
+   - Commits that are solely comprised of submodule updates are
+     exempted from this check.
+   - This check can also be disabled by adding "bot:notacherrypick" in
+     the Pull Request description.
+4. If a "(cherry picked from commit ...)" message exists, ensure that
+   the commit hash it mentions exists in the git repository.
 
-3. If required (by the git-commit-checks.json config file), ensure that a
-"(cherry picked from commit ...)" line exists in the commit message.
-    - Commits that are solely comprised of submodule updates are exempted from
-      this check.
-    - This check can also be disabled by adding "bot:notacherrypick" in the
-      Pull Request description.
-
-4. If a "(cherry picked from commit ...)" message exists, ensure that the commit
-hash it mentions exists in the git repository.
-
-If all checks pass, the script exits with status 0.  Otherwise, it exits with
-status 1.
+If all checks pass, the script exits with status 0.  Otherwise, it
+exits with status 1.
 
 """
 
@@ -42,25 +43,20 @@ import json
 import copy
 import argparse
 
+# Python API for GitHub API
 from github import Github
 
 GOOD = "good"
 BAD  = "bad"
 
 GITHUB_WORKSPACE  = os.environ.get('GITHUB_WORKSPACE')
-GITHUB_SHA        = os.environ.get('GITHUB_SHA')
-GITHUB_BASE_REF   = os.environ.get('GITHUB_BASE_REF')
 GITHUB_TOKEN      = os.environ.get('GITHUB_TOKEN')
 GITHUB_REPOSITORY = os.environ.get('GITHUB_REPOSITORY')
-GITHUB_REF        = os.environ.get('GITHUB_REF')
 
 # Sanity check
 if (GITHUB_WORKSPACE is None or
-    GITHUB_SHA is None or
-    GITHUB_BASE_REF is None or
     GITHUB_TOKEN is None or
-    GITHUB_REPOSITORY is None or
-    GITHUB_REF is None):
+    GITHUB_REPOSITORY is None):
     print("Error: this script is designed to run as a Github Action")
     exit(1)
 
@@ -221,16 +217,13 @@ def check_cherry_pick(config, repo, commit):
 
 #----------------------------------------------------------------------------
 
-def check_all_commits(config, repo):
-    # Get a list of commits that we'll be examining.  Use the progromatic form
-    # of "git log GITHUB_BASE_REF..GITHUB_SHA" (i.e., "git log ^GITHUB_BASE_REF
-    # GITHUB_SHA") to do the heavy lifting to find that set of commits.
+def check_all_commits(args, config, repo):
+    # Get a list of commits that we'll be examining.  Use the
+    # progromatic form of "git log base_ref..sha" (i.e., "git log
+    # ^base_ref sha") to do the heavy lifting to find that set of
+    # commits.
     git_cli = git.cmd.Git(GITHUB_WORKSPACE)
-    hashes  = git_cli.log(f"--pretty=format:%h", f"origin/{GITHUB_BASE_REF}..{GITHUB_SHA}").splitlines()
-
-    # The first entry in the list will be the artificial Github merge commit for
-    # this PR. We don't want to examine this commit.
-    del hashes[0]
+    hashes  = git_cli.log(f"--pretty=format:%h", f"origin/{args.github_base_ref}..{args.github_sha}").splitlines()
 
     #------------------------------------------------------------------------
 
@@ -272,14 +265,10 @@ def check_all_commits(config, repo):
 If "bot:notacherrypick" is in the PR description, then disable the
 cherry-pick message requirement.
 """
-def check_github_pr_description(config):
-    g      = Github(GITHUB_TOKEN)
-    repo   = g.get_repo(GITHUB_REPOSITORY)
-
-    # Extract the PR number from GITHUB_REF
-    match  = re.search("/(\d+)/", GITHUB_REF)
-    pr_num = int(match.group(1))
-    pr     = repo.get_pull(pr_num)
+def check_github_pr_description(config, pr_num):
+    g    = Github(GITHUB_TOKEN)
+    repo = g.get_repo(GITHUB_REPOSITORY)
+    pr   = repo.get_pull(pr_num)
 
     if "bot:notacherrypick" in pr.body:
         config['cherry pick required'] = False
@@ -314,12 +303,19 @@ def load_config():
 
 def setup_cli():
     parser = argparse.ArgumentParser(description='Github CI Action')
-    parser.add_argument('--number', type=int,
+    parser.add_argument('--pr', type=int,
                         required=True,
-                        help='Issue or PR number')
+                        help='PR number')
+    parser.add_argument('--github-base-ref',
+                        required=True,
+                        help='Github PR base ref (base of the branch)')
+    parser.add_argument('--github-sha',
+                        required=True,
+                        help='Github fake merge commit SHA')
 
     args = parser.parse_args()
-    print(f"==JMS: Got number {args.number}")
+
+    return args
 
 #----------------------------------------------------------------------------
 
@@ -327,10 +323,10 @@ def main():
     args = setup_cli()
 
     config = load_config()
-    check_github_pr_description(config)
+    check_github_pr_description(config, args.pr)
 
     repo = git.Repo(GITHUB_WORKSPACE)
-    results, hashes = check_all_commits(config, repo)
+    results, hashes = check_all_commits(args, config, repo)
     print_results(results, repo, hashes)
 
     if len(results[BAD]) == 0:

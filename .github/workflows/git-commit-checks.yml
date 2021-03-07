@@ -4,35 +4,14 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize]
 
 jobs:
-    ci:
-        name: Git commit checker
-        # if: ${{ github.event.issue.pull_request }}
+    pull_request_job:
+        name: Git commit checker (PR create/sync)
+        if: ${{ github.event.pull_request }}
         runs-on: ubuntu-latest
         steps:
-          - name: show the environment
-            run: env | sort
-
-          - name: show github.event.issue
-            run: |
-              echo JMS entire github context
-              echo '${{ toJSON(github) }}'
-              echo JMS just the github.event context
-              echo '${{ toJSON(github.event) }}'
-
-          - uses: khan/pull-request-comment-trigger@master
-            id: check
-            with:
-              trigger: 'bot:retest'
-              reaction: rocket
-            env:
-              GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-
-          - run: 'echo Found it!'
-            if: steps.check.outputs.triggered == 'true'
-
           - name: Check out the code
             uses: actions/checkout@v2
             with:
@@ -47,7 +26,114 @@ jobs:
           - name: Get the GitPython and PyGithub modules
             run: pip install gitpython PyGithub
 
+          # Note that we specify GITHUB_SHA^2 to avoid the merge
+          # commit that github puts here; "^2" means the 2nd commit in
+          # the set of GITHUB_SHA's parents.  Since we *know* it's a
+          # merge commit, we can ask for the 2nd one (GitHub always
+          # has the 1st commit be the base ref and the 2nd commit be
+          # the last commit in the PR).
           - name: Check all git commits
-            run: $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py --number ${{ github.event.issue.number }}
+            run: |
+              $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py \
+                --pr ${{ github.event.pull_request.number }} \
+                --github-base-ref $GITHUB_BASE_REF \
+                --github-sha "$GITHUB_SHA^2"
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # This is essentially the same as the above pull_request_job, but
+    # we have to do a little work first:
+    #
+    # - Does the comment include "bot:retest" (or some other
+    #   magic token)?
+    # - If so:
+    #   1. Use the GitHub API to obtain the PR base and head refs
+    #      (since this is an issue, that information is not included in
+    #      the metadata sent with this job)
+    #   2. Set a rocket reaction on the PR comment so that the user
+    #      knows it was seen/processed.
+    #   3. Do essentially the same job workflow as pull_request_job (I
+    #      couldn't find a way to basically "include" one job in
+    #      another).
+    issue_job:
+        name: Git commit checker (PR comment)
+        if: ${{ github.event.issue.pull_request }}
+        runs-on: ubuntu-latest
+        steps:
+          - name: did we find it?
+            run: 'echo Found it!'
+            if: steps.check.outputs.triggered == 'true'
+
+          - name: Check PR metadata
+            id: git-refs
+            run: |
+              $GITHUB_WORKSPACE/.github/workflows/find-pr-bot-retest.py \
+                --pr ${{ github.event.issue.number }} \
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Output a few items we can use in subsequent steps:
+          # - GITHUB_BASE_REF: github PR base ref
+          # - GITHUB_REF: github PR HEAD ref
+          # - BOT_RETEST: 1 if a trigger token was found; 0 otherwise
+          - name: Find the corresponding PR comment and PR meta data
+            id: git-refs2
+            uses: actions/github-script@v3
+            if: ${{ contains(github.event.comment.body, 'bot-retest') || contains(github.event.comment.body, 'bot-ompi:retest') || contains(github.event.comment.body, 'bot-github:retest') }}
+            with:
+              github-token: ${{ secrets.GITHUB_TOKEN }}
+              result-encoding: string
+              # Download the PR metadata and get the base and head git
+              # refs.
+              script: |
+                pr = await github.request("GET /repos/{org}/{repo}/pulls/{num}", {
+                    org: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    num: ${{ github.event.number }} });
+                console.log("::set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
+                console.log("::set-output name=GITHUB_REF::" + pr.data.head.ref);
+                console.log("::set-output name=BOT_RETEST::1");
+
+                await github.reactions.createForIssueComment({
+                    '${{ github.repository_owner }}',
+                    '${{ github.event.repository.name }}',
+                    comment_id: ${{ github.event.comment.id }},
+                    content: 'rocket'});
+
+          - name: JMS DEBUG Show what we got
+            run: |
+              echo base ref ${{ steps.git-refs.outputs.GITHUB_BASE_REF }}
+              echo ref ${{ steps.git-refs.outputs.GITHUB_REF }}
+              echo ref ${{ steps.git-refs.outputs.BOT_RETEST }}
+              # JMS Force a failure
+              exit(1)
+
+          - name: Check out the code
+            uses: actions/checkout@v2
+            with:
+                # Get all branches and history
+                fetch-depth: 0
+                # Since this is an issue, there's no ref.  Use the
+                # output from the prior step.
+                ref: ${{ steps.git-refs.outputs.GITHUB_REF }}
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
+
+          - name: Setup Python
+            uses: actions/setup-python@v2
+            with:
+              python-version: '3.x'
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
+
+          - name: Get the GitPython and PyGithub modules
+            run: pip install gitpython PyGithub
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
+
+          - name: Check all git commits
+            run: |
+              $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py \
+                --pr ${{ github.event.issue.number }} \
+                --github-base-ref ${{ steps.git-refs.outputs.GITHUB_BASE_REF }} \
+                --github-sha "${{ steps.git-refs.outputs.GITHUB_REF }}^2"
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
