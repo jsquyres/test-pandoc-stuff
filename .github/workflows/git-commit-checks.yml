@@ -120,3 +120,17 @@ jobs:
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
+
+          - name: Set "success" result (if we succeeded)
+            if: ${{ success() }}
+            uses: actions/github-script@v3
+              github-token: ${{ secrets.GITHUB_TOKEN }}
+              script: |
+                console.log('I passed!')
+
+          - name: Set "failed" result (if we failed)
+            if: ${{ failure() }}
+            uses: actions/github-script@v3
+              github-token: ${{ secrets.GITHUB_TOKEN }}
+              script: |
+                console.log('I failed')
