@@ -77,17 +77,6 @@ jobs:
               # Download the PR metadata and get the base and head git
               # refs.
               script: |
-                pr = await github.request('GET /repos/{org}/{repo}/pulls/{num}', {
-                    org: '${{ github.repository_owner }}',
-                    repo: '${{ github.event.repository.name }}',
-                    num: ${{ github.event.issue.number }} });
-
-                console.log("::set-output name=GITHUB_BASE_REF::" +
-                            pr.data.base.ref);
-                console.log("::set-output name=GITHUB_REF::" +
-                            pr.data.head.ref);
-                console.log("::set-output name=BOT_RETEST::1");
-
                 await github.reactions.createForIssueComment({
                     '${{ github.repository_owner }}',
                     '${{ github.event.repository.name }}',
