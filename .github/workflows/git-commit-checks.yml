@@ -89,12 +89,6 @@ jobs:
                 console.log("::set-output name=GITHUB_REF::" + pr.data.head.ref);
                 console.log("::set-output name=BOT_RETEST::1");
 
-                await github.reactions.createForIssueComment({
-                    '${{ github.repository_owner }}',
-                    '${{ github.event.repository.name }}',
-                    comment_id: ${{ github.event.comment.id }},
-                    content: 'rocket'});
-
           - name: JMS DEBUG Show what we got
             run: |
               echo base ref ${{ steps.git-refs.outputs.GITHUB_BASE_REF }}
