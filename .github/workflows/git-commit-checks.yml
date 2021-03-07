@@ -90,7 +90,7 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     ref: pr.data.head.sha,
                 });
-                console.log(suites);
+                console.log(suites.check_suites[0].app.name);
 
 
 
