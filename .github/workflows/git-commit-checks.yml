@@ -56,9 +56,10 @@ jobs:
     #   3. Do essentially the same job workflow as pull_request_job (I
     #      couldn't find a way to basically "include" one job in
     #      another).
+    #   4. Manually set the check result on the git SHA
     issue_job:
         # This "name" value must be the same in all jobs
-        name: Git commit checker
+        name: Git commit checker (comment)
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
@@ -94,6 +95,7 @@ jobs:
                     content: 'rocket' });
 
           - name: Check out the code
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
             uses: actions/checkout@v2
             with:
                 # Get all branches and history
@@ -101,19 +103,19 @@ jobs:
                 # Since this is an issue, there's no ref.  Use the
                 # output from the prior step.
                 ref: ${{ steps.git-refs.outputs.GITHUB_REF }}
-            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
 
           - name: Setup Python
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
             uses: actions/setup-python@v2
             with:
               python-version: '3.x'
-            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
 
           - name: Get the GitPython and PyGithub modules
-            run: pip install gitpython PyGithub
             if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
+            run: pip install gitpython PyGithub
 
           - name: Check all git commits
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
             id: check-commits
             run: |
               $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py \
@@ -122,13 +124,14 @@ jobs:
                 --github-sha "${{ steps.git-refs.outputs.GITHUB_REF }}"
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
 
           - name: Set check result
+            if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
             uses: actions/github-script@v3
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
-              # Note that the "name" must be the same as the job names
+              # Note that the "name" value must be the same as the job
+              # names
               script: |
                 await github.checks.create({
                     name: 'Git commit checker',
