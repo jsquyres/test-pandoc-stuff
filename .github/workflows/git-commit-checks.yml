@@ -60,24 +60,12 @@ jobs:
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
-          - name: did we find it?
-            run: 'echo Found it!'
-            if: steps.check.outputs.triggered == 'true'
-
-          - name: Check PR metadata
-            id: git-refs
-            run: |
-              $GITHUB_WORKSPACE/.github/workflows/find-pr-bot-retest.py \
-                --pr ${{ github.event.issue.number }} \
-            env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
           # Output a few items we can use in subsequent steps:
           # - GITHUB_BASE_REF: github PR base ref
           # - GITHUB_REF: github PR HEAD ref
           # - BOT_RETEST: 1 if a trigger token was found; 0 otherwise
           - name: Find the corresponding PR comment and PR meta data
-            id: git-refs2
+            id: git-refs
             uses: actions/github-script@v3
             if: ${{ contains(github.event.comment.body, 'bot-retest') || contains(github.event.comment.body, 'bot-ompi:retest') || contains(github.event.comment.body, 'bot-github:retest') }}
             with:
