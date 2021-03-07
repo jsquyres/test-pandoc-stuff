@@ -97,7 +97,7 @@ jobs:
                 suites = await github.checks.listCheckSuites({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
-                    head_sha: '${{ pr.data.head.ref }}',
+                    head_sha: pr.data.head.ref,
                     check_name: 'Git commit checker',
                 });
                 log.console(suites);
