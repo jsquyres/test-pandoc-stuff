@@ -8,7 +8,7 @@ on:
 
 jobs:
     pull_request_job:
-        name: Git commit checker (PR create/sync)
+        name: Git commit checker
         if: ${{ github.event.pull_request }}
         runs-on: ubuntu-latest
         steps:
@@ -56,7 +56,7 @@ jobs:
     #      couldn't find a way to basically "include" one job in
     #      another).
     issue_job:
-        name: Git commit checker (PR comment)
+        name: Git commit checker
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
@@ -127,9 +127,10 @@ jobs:
             uses: actions/github-script@v3
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
+              # Note that the "name" must be the same .....
               script: |
                 await github.checks.create({
-                    name: 'Hello kitty',
+                    name: 'Git commit checker (PR comment)',
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
