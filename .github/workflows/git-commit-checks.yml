@@ -95,11 +95,12 @@ jobs:
                     content: 'rocket' });
 
                 console.log('JMS Git ref is ' + pr.data.head.ref);
+                console.log('JMS Git sha is ' + pr.data.head.sha);
 
                 suites = await github.checks.listSuitesForRef({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
-                    ref: pr.data.head.ref,
+                    ref: pr.data.head.sha,
                     check_name: 'Git commit checker',
                 });
                 console.log(suites);
