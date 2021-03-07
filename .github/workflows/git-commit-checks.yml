@@ -82,6 +82,22 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     pull_number: ${{ github.event.issue.number }} });
 
+                console.log('JMS Git ref is ' + pr.data.head.ref);
+                console.log('JMS Git sha is ' + pr.data.head.sha);
+
+                suites = await github.checks.listSuitesForRef({
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    ref: pr.data.head.sha,
+                });
+                console.log(suites);
+
+
+
+
+
+
+
                 console.log("::set-output name=GITHUB_BASE_REF::" +
                             pr.data.base.ref);
                 console.log("::set-output name=GITHUB_REF::" +
@@ -93,17 +109,6 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     comment_id: ${{ github.event.comment.id }},
                     content: 'rocket' });
-
-                console.log('JMS Git ref is ' + pr.data.head.ref);
-                console.log('JMS Git sha is ' + pr.data.head.sha);
-
-                suites = await github.checks.listSuitesForRef({
-                    owner: '${{ github.repository_owner }}',
-                    repo: '${{ github.event.repository.name }}',
-                    ref: pr.data.head.sha,
-                    check_name: 'Git commit checker',
-                });
-                console.log(suites);
 
           - name: JMS DEBUG cause failure
             run: |
