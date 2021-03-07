@@ -78,10 +78,11 @@ jobs:
               # refs.
               script: |
                 await github.reactions.createForIssueComment({
-                    '${{ github.repository_owner }}',
-                    '${{ github.event.repository.name }}',
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
                     comment_id: ${{ github.event.comment.id }},
-                    content: 'rocket' });
+                    content: 'rocket'
+                });
 
           - name: JMS DEBUG Show what we got
             run: |
