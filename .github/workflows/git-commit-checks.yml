@@ -64,6 +64,9 @@ jobs:
           # - GITHUB_BASE_REF: github PR base ref
           # - GITHUB_REF: github PR HEAD ref
           # - BOT_RETEST: 1 if a trigger token was found; 0 otherwise
+          #
+          # We don't have a git clone yet, so we do this with inline
+          # GitHub script.
           - name: Find the corresponding PR comment and PR meta data
             id: git-refs
             uses: actions/github-script@v3
@@ -80,9 +83,6 @@ jobs:
                     num: ${{ github.event.number }} });
                 console.log("JMS set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
                 console.log("JMS set-output name=GITHUB_REF::" + pr.data.head.ref);
-                console.log("::set-output name=GITHUB_BASE_REF::" + pr.data.base.ref);
-                console.log("::set-output name=GITHUB_REF::" + pr.data.head.ref);
-                console.log("::set-output name=BOT_RETEST::1");
 
           - name: JMS DEBUG Show what we got
             run: |
