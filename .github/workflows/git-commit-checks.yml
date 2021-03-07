@@ -67,7 +67,7 @@ jobs:
           - name: Find the corresponding PR comment and PR meta data
             id: git-refs
             uses: actions/github-script@v3
-            if: ${{ contains(github.event.comment.body, 'bot-retest') || contains(github.event.comment.body, 'bot-ompi:retest') || contains(github.event.comment.body, 'bot-github:retest') }}
+            if: ${{ contains(github.event.comment.body, 'bot:retest') || contains(github.event.comment.body, 'bot:ompi:retest') || contains(github.event.comment.body, 'bot:github:retest') }}
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               result-encoding: string
