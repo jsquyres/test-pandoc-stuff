@@ -99,8 +99,8 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     head_sha: '${{ pr.data.head.ref }}',
                     check_name: 'Git commit checker',
-                })
-                log.console(suites)
+                });
+                log.console(suites);
 
           - name: JMS DEBUG cause failure
             run: |
