@@ -100,7 +100,7 @@ jobs:
                     ref: pr.data.head.ref,
                     check_name: 'Git commit checker',
                 });
-                log.console(suites);
+                console.log(suites);
 
           - name: JMS DEBUG cause failure
             run: |
