@@ -70,14 +70,17 @@ jobs:
           - name: Find the corresponding PR comment and PR meta data
             id: git-refs
             uses: actions/github-script@v3
-            if: ${{ contains(github.event.comment.body, 'bot:retest') }}
+            #if: ${{ contains(github.event.comment.body, 'bot:retest') }}
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               result-encoding: string
               # Download the PR metadata and get the base and head git
               # refs.
               script: |
-                pr = await github.request("GET /repos/{org}/{repo}/pulls/{num}", {                    org: '${{ github.repository_owner }}',                    repo: '${{ github.event.repository.name }}',                    num: ${{ github.event.number }} });
+                pr = await github.request('GET /repos/{org}/{repo}/pulls/{num}', {
+                    org: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    num: ${{ github.event.number }} });
 
           - name: JMS DEBUG Show what we got
             run: |
