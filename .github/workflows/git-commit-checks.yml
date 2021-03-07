@@ -94,6 +94,8 @@ jobs:
                     comment_id: ${{ github.event.comment.id }},
                     content: 'rocket' });
 
+                console.log('JMS Git ref is ' + pr.data.head.ref);
+
                 suites = await github.checks.listSuitesForRef({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
