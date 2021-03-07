@@ -73,14 +73,11 @@ jobs:
             if: ${{ contains(github.event.comment.body, 'bot:retest') || contains(github.event.comment.body, 'bot:ompi:retest') || contains(github.event.comment.body, 'bot:github:retest') }}
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
-              result-encoding: string
-              # Download the PR metadata and get the base and head git
-              # refs.
               script: |
-                pr = await github.request('GET /repos/{org}/{repo}/pulls/{num}', {
-                    org: '${{ github.repository_owner }}',
+                pr = await github.pulls.get({
+                    owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
-                    num: ${{ github.event.issue.number }} });
+                    pull_number: ${{ github.event.issue.number }} });
 
                 console.log("::set-output name=GITHUB_BASE_REF::" +
                             pr.data.base.ref);
