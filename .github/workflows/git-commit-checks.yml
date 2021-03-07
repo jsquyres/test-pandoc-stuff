@@ -10,11 +10,17 @@ jobs:
     ci:
         name: Git commit checker
         # if: ${{ github.event.issue.pull_request }}
-        # Meaningless change
         runs-on: ubuntu-latest
         steps:
           - name: show the environment
             run: env | sort
+
+          - name: show github.event.issue
+            run: |
+              echo JMS entire github context
+              echo '${{ toJSON(github) }}'
+              echo JMS just the github.event context
+              echo '${{ toJSON(github.event) }}'
 
           - uses: khan/pull-request-comment-trigger@master
             id: check
@@ -42,6 +48,6 @@ jobs:
             run: pip install gitpython PyGithub
 
           - name: Check all git commits
-            run: $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py
+            run: $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py --number ${{ github.event.issue.number }}
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

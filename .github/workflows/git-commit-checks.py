@@ -312,7 +312,20 @@ def load_config():
 
 #----------------------------------------------------------------------------
 
+def setup_cli():
+    parser = argparse.ArgumentParser(description='Github CI Action')
+    parser.add_argument('--number', type=int,
+                        required=True,
+                        help='Issue or PR number')
+
+    args = parser.parse_args()
+    print(f"==JMS: Got number {args.number}")
+
+#----------------------------------------------------------------------------
+
 def main():
+    args = setup_cli()
+
     config = load_config()
     check_github_pr_description(config)
 
