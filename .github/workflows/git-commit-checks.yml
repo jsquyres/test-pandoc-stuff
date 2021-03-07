@@ -112,6 +112,7 @@ jobs:
             if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
 
           - name: Check all git commits
+            id: check-commits
             run: |
               $GITHUB_WORKSPACE/.github/workflows/git-commit-checks.py \
                 --pr ${{ github.event.issue.number }} \
@@ -127,7 +128,13 @@ jobs:
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               script: |
-                console.log('I passed!')
+                await github.checks.create({
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
+                    status: 'completed',
+                    conclusion: 'success',
+                    details_url: 'https://example.com/' });
 
           - name: Set "failed" result (if we failed)
             if: ${{ failure() }}
