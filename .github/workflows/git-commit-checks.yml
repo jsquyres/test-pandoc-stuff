@@ -131,7 +131,7 @@ jobs:
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               # Note that the "name" value must be the same as the job
-              # names
+              # names...?
               script: |
                 await github.checks.create({
                     name: 'Git commit checker',
