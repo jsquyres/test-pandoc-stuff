@@ -124,12 +124,11 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
 
-          - name: Set "success" result (if we succeeded)
-            if: ${{ success() }}
+          - name: Set check result
             uses: actions/github-script@v3
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
-              # Note that the "name" must be the same .....
+              # Note that the "name" must be the same as the job names
               script: |
                 await github.checks.create({
                     name: 'Git commit checker',
@@ -137,13 +136,5 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
                     status: 'completed',
-                    conclusion: 'failure',
+                    conclusion: ${{ steps.check-commits.conclusion }},
                     details_url: 'https://example.com/' });
-
-          - name: Set "failed" result (if we failed)
-            if: ${{ failure() }}
-            uses: actions/github-script@v3
-            with:
-              github-token: ${{ secrets.GITHUB_TOKEN }}
-              script: |
-                console.log('I failed')
