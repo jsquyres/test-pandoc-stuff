@@ -55,7 +55,7 @@ jobs:
     # pull_request_job, but with extra steps to do the above-listed
     # work.
     issue_job:
-        name: Git commit checker (comment)
+        name: Retest git commit checker
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
