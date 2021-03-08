@@ -129,27 +129,18 @@ jobs:
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
               script: |
-                pr = await github.pulls.get({
-                    owner: '${{ github.repository_owner }}',
-                    repo: '${{ github.event.repository.name }}',
-                    pull_number: ${{ github.event.issue.number }} });
-
-                console.log('JMS Git ref is ' + pr.data.head.ref);
-                console.log('JMS Git sha is ' + pr.data.head.sha);
-
                 response = await github.checks.listForRef({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     ref: '${{ steps.git-refs.outputs.GITHUB_REF }}',
                 });
 
-                console.log("JMS Got total count: " + response.data.total_count);
-                var i, id
-                id = -1
+                console.log("JMS Got total run count: " + response.data.total_count);
+                var i, id = -1
                 for (i = 0; i < response.data.total_count; ++i) {
-                    console.log("JMS Got suites["+i+"].name: " + response.data.check_runs[i].name);
-                    console.log("JMS Got suites["+i+"].app.name: " + response.data.check_runs[i].app.name);
-                    console.log("JMS Got suites["+i+"].id: " + response.data.check_runs[i].id);
+                    console.log("JMS Got runs["+i+"].name: " + response.data.check_runs[i].name);
+                    console.log("JMS Got runs["+i+"].app.name: " + response.data.check_runs[i].app.name);
+                    console.log("JMS Got runs["+i+"].id: " + response.data.check_runs[i].id);
 
                     if (response.data.check_runs[i].name == 'Git commit checker' &&
                         response.data.check_runs[i].app.name == 'GitHub Actions') {
