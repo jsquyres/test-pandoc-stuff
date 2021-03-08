@@ -97,6 +97,7 @@ jobs:
                     console.log("JMS Got suites["+i+"].name: " + response.data.check_runs[i].name);
                     console.log("JMS Got suites["+i+"].app.name: " + response.data.check_runs[i].app.name);
                     console.log("JMS Got suites["+i+"].id: " + response.data.check_runs[i].id);
+                }
 
                 await github.checks.update({
                     owner: '${{ github.repository_owner }}',
