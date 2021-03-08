@@ -96,6 +96,18 @@ jobs:
                 console.log(response.data.check_suites[0].app.name);
 
 
+                response = await github.checks.listForRef({
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    ref: pr.data.head.sha,
+                });
+                console.log("JMS Got runs: " + response.data);
+                console.log("JMS Got total count: " + response.data.total_count);
+                console.log("JMS Got runs[0]: " + response.data.check_suites[0].app.name);
+                console.log(response.data.runs[0].name);
+                console.log(response.data.runs[0].app.name);
+
+
 
 
 
