@@ -89,7 +89,6 @@ jobs:
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     ref: pr.data.head.sha,
-                    check_name: 'GitHub Actions',
                 });
                 console.log("JMS Got suites: " + response.data);
                 console.log("JMS Got total count: " + response.data.total_count);
