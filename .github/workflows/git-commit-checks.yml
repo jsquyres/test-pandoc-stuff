@@ -89,11 +89,12 @@ jobs:
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     ref: pr.data.head.sha,
+                    check_name: 'GitHub Actions',
                 });
                 console.log("JMS Got suites: " + response.data);
                 console.log("JMS Got total count: " + response.data.total_count);
-                console.log("JMS Got suites[0]: " + response.data.check_suites[0].app.name);
-                console.log(response.data.check_suites[0].app.name);
+                console.log("JMS Got suites[0].app.name: " + response.data.check_suites[0].app.name);
+                console.log("JMS Got suites[0].is: " + response.data.check_suites[0].id);
 
 
                 response = await github.checks.listForRef({
@@ -108,6 +109,11 @@ jobs:
 
 
 
+                response = await github.checks.rerequestSuite({
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    check_suite_id: response.data.check_suites[0].id,
+                });
 
 
 
