@@ -93,22 +93,9 @@ jobs:
                 console.log("JMS Got suites: " + response.data);
                 console.log("JMS Got total count: " + response.data.total_count);
                 console.log("JMS Got suites[0].app.name: " + response.data.check_suites[0].app.name);
-                console.log("JMS Got suites[0].is: " + response.data.check_suites[0].id);
+                console.log("JMS Got suites[0].id: " + response.data.check_suites[0].id);
 
-
-                response = await github.checks.listForRef({
-                    owner: '${{ github.repository_owner }}',
-                    repo: '${{ github.event.repository.name }}',
-                    ref: pr.data.head.sha,
-                });
-                console.log("JMS Got runs: " + response.data);
-                console.log("JMS Got total count: " + response.data.total_count);
-                console.log("JMS Got runs[0].name: " + response.data.check_runs[0].name);
-                console.log("JMS Got runs[0].app.name: " + response.data.check_runs[0].app.name);
-
-
-
-                response = await github.checks.rerequestSuite({
+                await github.checks.rerequestSuite({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     check_suite_id: response.data.check_suites[0].id,
