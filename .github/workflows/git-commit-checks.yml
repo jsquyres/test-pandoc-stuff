@@ -92,22 +92,30 @@ jobs:
                 });
 
                 console.log("JMS Got total count: " + response.data.total_count);
-                var i
+                var i, j
+                j = -1
                 for (i = 0; i < response.data.total_count; ++i) {
                     console.log("JMS Got suites["+i+"].name: " + response.data.check_runs[i].name);
                     console.log("JMS Got suites["+i+"].app.name: " + response.data.check_runs[i].app.name);
                     console.log("JMS Got suites["+i+"].id: " + response.data.check_runs[i].id);
+
+                    if (response.data.check_runs[i].name == 'Git commit checker' &&
+                        response.data.check_runs[i].app.name == 'GitHub Actions') {
+                        j = i;
+                        break;
+                    }
                 }
 
-                await github.checks.update({
-                    owner: '${{ github.repository_owner }}',
-                    repo: '${{ github.event.repository.name }}',
-                    check_run_id: response.data.check_runs[0].id,
-                    details_url: 'https://example.com/',
-                    status: 'completed',
-                    conclusion: 'failure',
-                })
-
+                if (j >= 0) {
+                    await github.checks.update({
+                        owner: '${{ github.repository_owner }}',
+                        repo: '${{ github.event.repository.name }}',
+                        check_run_id: response.data.check_runs[0].id,
+                        details_url: 'https://www.open-mpi.org/',
+                        status: 'completed',
+                        conclusion: 'failure',
+                    })
+                }
 
 
                 console.log("::set-output name=GITHUB_BASE_REF::" +
