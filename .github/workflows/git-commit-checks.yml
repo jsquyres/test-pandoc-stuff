@@ -8,7 +8,6 @@ on:
 
 jobs:
     pull_request_job:
-        # This "name" value must be the same in all jobs
         name: Git commit checker
         if: ${{ github.event.pull_request }}
         runs-on: ubuntu-latest
@@ -42,34 +41,27 @@ jobs:
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # This is essentially the same as the above pull_request_job, but
-    # we have to do a little work first:
+
+    # For Github issue comments (which also include comments on PRs
+    # (!)), we have to do extra work because Github does not give us
+    # the PR metadata.  Specifically:
     #
-    # - Does the comment include "bot:retest" (or some other
-    #   magic token)?
-    # - If so:
-    #   1. Use the GitHub API to obtain the PR base and head refs
-    #      (since this is an issue, that information is not included in
-    #      the metadata sent with this job)
-    #   2. Set a rocket reaction on the PR comment so that the user
-    #      knows it was seen/processed.
-    #   3. Do essentially the same job workflow as pull_request_job (I
-    #      couldn't find a way to basically "include" one job in
-    #      another).
-    #   4. Manually set the check result on the git SHA
+    # 1. We have to get the Git base / head refs
+    # 2. We have to set the test result manually (because this action is
+    # not associated with a PR, so it doesn't automatically set the CI
+    # check run test per the output of this action)
+    #
+    # The issue_job below is *essentially* the same workflow as the
+    # pull_request_job, but with extra steps to do the above-listed
+    # work.
     issue_job:
-        # This "name" value must be the same in all jobs
         name: Git commit checker (comment)
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
-          # Output a few items we can use in subsequent steps:
-          # - GITHUB_BASE_REF: github PR base ref
-          # - GITHUB_REF: github PR HEAD ref
-          # - BOT_RETEST: 1 if a trigger token was found; 0 otherwise
-          #
-          # We don't have a git clone yet, so we do this with inline
-          # GitHub script.
+          # Get the PR metadata.  We don't have a git clone yet (and
+          # can't get one until we have the PR metadata), so we do
+          # this with inline GitHub script.
           - name: Find the corresponding PR comment and PR meta data
             id: git-refs
             uses: actions/github-script@v3
@@ -80,60 +72,25 @@ jobs:
                 pr = await github.pulls.get({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
-                    pull_number: ${{ github.event.issue.number }} });
-
-                console.log('JMS Git ref is ' + pr.data.head.ref);
-                console.log('JMS Git sha is ' + pr.data.head.sha);
-
-                response = await github.checks.listForRef({
-                    owner: '${{ github.repository_owner }}',
-                    repo: '${{ github.event.repository.name }}',
-                    ref: pr.data.head.sha,
+                    pull_number: ${{ github.event.issue.number }},
                 });
 
-                console.log("JMS Got total count: " + response.data.total_count);
-                var i, id
-                id = -1
-                for (i = 0; i < response.data.total_count; ++i) {
-                    console.log("JMS Got suites["+i+"].name: " + response.data.check_runs[i].name);
-                    console.log("JMS Got suites["+i+"].app.name: " + response.data.check_runs[i].app.name);
-                    console.log("JMS Got suites["+i+"].id: " + response.data.check_runs[i].id);
-
-                    if (response.data.check_runs[i].name == 'Git commit checker' &&
-                        response.data.check_runs[i].app.name == 'GitHub Actions') {
-                        id = response.data.check_runs[i].id
-                        break;
-                    }
-                }
-
-                if (id >= 0) {
-                    await github.checks.update({
-                        owner: '${{ github.repository_owner }}',
-                        repo: '${{ github.event.repository.name }}',
-                        check_run_id: id,
-                        details_url: 'https://www.open-mpi.org/',
-                        status: 'completed',
-                        conclusion: 'failure',
-                    });
-                    console.log("Updated status of job ID " + id);
-                }
-
-
+                // Set these as Github output values so that they're
+                // accessible in later steps (below).
                 console.log("::set-output name=GITHUB_BASE_REF::" +
                             pr.data.base.ref);
                 console.log("::set-output name=GITHUB_REF::" +
                             pr.data.head.ref);
                 console.log("::set-output name=BOT_RETEST::1");
 
+                // Set a rocket reaction so that the user knows we saw
+                // and reacted to their command
                 await github.reactions.createForIssueComment({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     comment_id: ${{ github.event.comment.id }},
-                    content: 'rocket' });
-
-          - name: JMS DEBUG cause failure
-            run: |
-              exit 1
+                    content: 'rocket',
+                });
 
           - name: Check out the code
             if: ${{ steps.git-refs.outputs.BOT_RETEST == 1 }}
@@ -171,14 +128,46 @@ jobs:
             uses: actions/github-script@v3
             with:
               github-token: ${{ secrets.GITHUB_TOKEN }}
-              # Note that the "name" value must be the same as the job
-              # names...?
               script: |
-                await github.checks.create({
-                    name: 'Git commit checker',
+                pr = await github.pulls.get({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
-                    head_sha: '${{ steps.git-refs.outputs.GITHUB_REF }}',
-                    status: 'completed',
-                    conclusion: '${{ steps.check-commits.conclusion }}',
-                    details_url: 'https://example.com/' });
+                    pull_number: ${{ github.event.issue.number }} });
+
+                console.log('JMS Git ref is ' + pr.data.head.ref);
+                console.log('JMS Git sha is ' + pr.data.head.sha);
+
+                response = await github.checks.listForRef({
+                    owner: '${{ github.repository_owner }}',
+                    repo: '${{ github.event.repository.name }}',
+                    ref: '${{ steps.git-refs.outputs.GITHUB_REF }}',
+                });
+
+                console.log("JMS Got total count: " + response.data.total_count);
+                var i, id
+                id = -1
+                for (i = 0; i < response.data.total_count; ++i) {
+                    console.log("JMS Got suites["+i+"].name: " + response.data.check_runs[i].name);
+                    console.log("JMS Got suites["+i+"].app.name: " + response.data.check_runs[i].app.name);
+                    console.log("JMS Got suites["+i+"].id: " + response.data.check_runs[i].id);
+
+                    if (response.data.check_runs[i].name == 'Git commit checker' &&
+                        response.data.check_runs[i].app.name == 'GitHub Actions') {
+                        id = response.data.check_runs[i].id
+                        break;
+                    }
+                }
+
+                if (id >= 0) {
+                    await github.checks.update({
+                        owner: '${{ github.repository_owner }}',
+                        repo: '${{ github.event.repository.name }}',
+                        check_run_id: id,
+                        details_url: 'https://www.open-mpi.org/',
+                        status: 'completed',
+                        conclusion: '${{ steps.check-commits.conclusion }}',
+                    });
+                    console.log("Updated status of job ID " + id);
+                } else {
+                    console.log("Unable to find GitHub check job ID to update!");
+                }
