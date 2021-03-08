@@ -105,7 +105,7 @@ jobs:
                     check_run_id: response.data.check_runs[0].id,
                     details_url: 'https://example.com/',
                     status: 'completed',
-                    conclusion: 'success',
+                    conclusion: 'failure',
                 })
 
 
