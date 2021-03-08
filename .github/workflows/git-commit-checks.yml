@@ -70,6 +70,8 @@ jobs:
           #
           # We don't have a git clone yet, so we do this with inline
           # GitHub script.
+          #
+          # JMS Maybe something simpler...?
           - name: Find the corresponding PR comment and PR meta data
             id: git-refs
             uses: actions/github-script@v3
