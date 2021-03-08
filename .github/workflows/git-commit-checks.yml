@@ -154,7 +154,7 @@ jobs:
                         owner: '${{ github.repository_owner }}',
                         repo: '${{ github.event.repository.name }}',
                         check_run_id: id,
-                        details_url: 'https://github.com/${{github.respository_owner}}/${{github.event.repository.name}}/pull/${github.event.issue.number}}/checks?check_run_id=${{github.run_id}}',
+                        details_url: 'https://github.com/${{github.respository_owner}}/${{github.event.repository.name}}/pull/${{github.event.issue.number}}/checks?check_run_id=${{github.run_id}}',
                         status: 'completed',
                         conclusion: '${{ steps.check-commits.conclusion }}',
                     });
