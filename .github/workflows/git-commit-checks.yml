@@ -90,10 +90,13 @@ jobs:
                     repo: '${{ github.event.repository.name }}',
                     ref: pr.data.head.sha,
                 });
+
                 console.log("JMS Got total count: " + response.data.total_count);
-                console.log("JMS Got suites[0].name: " + response.data.check_runs[0].name);
-                console.log("JMS Got suites[0].app.name: " + response.data.check_runs[0].app.name);
-                console.log("JMS Got suites[0].id: " + response.data.check_runs[0].id);
+                var i
+                for (i = 0; i < response.data.total_count; ++i) {
+                    console.log("JMS Got suites["+i+"].name: " + response.data.check_runs[i].name);
+                    console.log("JMS Got suites["+i+"].app.name: " + response.data.check_runs[i].app.name);
+                    console.log("JMS Got suites["+i+"].id: " + response.data.check_runs[i].id);
 
                 await github.checks.update({
                     owner: '${{ github.repository_owner }}',
