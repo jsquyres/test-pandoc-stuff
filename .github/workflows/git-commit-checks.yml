@@ -85,14 +85,15 @@ jobs:
                 console.log('JMS Git ref is ' + pr.data.head.ref);
                 console.log('JMS Git sha is ' + pr.data.head.sha);
 
-                suites = await github.checks.listSuitesForRef({
+                response = await github.checks.listSuitesForRef({
                     owner: '${{ github.repository_owner }}',
                     repo: '${{ github.event.repository.name }}',
                     ref: pr.data.head.sha,
                 });
-                console.log("JMS Got suites: " + suites);
-                console.log("JMS Got suites[0]: " + suites[0]);
-                console.log(suites[0].app.name);
+                console.log("JMS Got suites: " + response.data);
+                console.log("JMS Got total count: " + response.data.total_count);
+                console.log("JMS Got suites[0]: " + response.data.check_suites[0]);
+                console.log(response.data.check_suites[0].app.name);
 
 
 
