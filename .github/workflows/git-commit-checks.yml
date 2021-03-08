@@ -59,6 +59,11 @@ jobs:
         if: ${{ github.event.issue.pull_request }}
         runs-on: ubuntu-latest
         steps:
+          - name: show github event.issue
+            run: |
+              echo JMS entire github context
+              echo '${{ toJSON(github) }}'
+
           # Get the PR metadata.  We don't have a git clone yet (and
           # can't get one until we have the PR metadata), so we do
           # this with inline GitHub script.
@@ -154,7 +159,7 @@ jobs:
                         owner: '${{ github.repository_owner }}',
                         repo: '${{ github.event.repository.name }}',
                         check_run_id: id,
-                        details_url: 'https://github.com/${{github.respository_owner}}/${{github.event.repository.name}}/runs/${{github.run_id}}',
+                        details_url: 'https://github.com/${{github.repository_owner}}/${{github.event.repository.name}}/runs/${{github.run_id}}',
                         status: 'completed',
                         conclusion: '${{ steps.check-commits.conclusion }}',
                     });
