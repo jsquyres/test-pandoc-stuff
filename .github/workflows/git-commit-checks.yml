@@ -63,6 +63,8 @@ jobs:
             run: |
               echo JMS entire github context
               echo '${{ toJSON(github) }}'
+              echo JMS entire job context
+              echo '${{ toJSON(job) }}'
 
           # Get the PR metadata.  We don't have a git clone yet (and
           # can't get one until we have the PR metadata), so we do
