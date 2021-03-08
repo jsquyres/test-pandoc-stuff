@@ -61,6 +61,12 @@ jobs:
         steps:
           - name: show github event.issue
             run: |
+              echo JMS entire steps context
+              echo '${{ toJSON(steps) }}'
+              echo JMS entire runner context
+              echo '${{ toJSON(runner) }}'
+              echo JMS entire strategy context
+              echo '${{ toJSON(strategy) }}'
               echo JMS entire github context
               echo '${{ toJSON(github) }}'
               echo JMS entire job context
